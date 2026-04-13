@@ -29,6 +29,7 @@ Last updated: 2026-04-13 12:15:00 +03:00
 - 2026-04-13 09:10:00 +03:00: Implemented webhook response round-trip: `src/lib/pending-store.ts` (in-memory correlationId->result store), `/api/analyze/callback` (N8N POSTs results back), `/api/analyze/status/[id]` (frontend polls), updated `/api/analyze` to pass callbackUrl to N8N and register pending, updated `page.tsx` with polling + chill Hebrew waiting UI.
 - 2026-04-13: Major visual/animation upgrade — added CSS keyframe animations (fade-in, slide-up, slide-down, scale-in, float, shimmer, glow-pulse), glassmorphism, gradient mesh background, gradient CTA button, staggered card entrances, hover lift effects, trust footer, icons per section, gradient text header. All pure CSS/Tailwind, no extra deps.
 - 2026-04-13 11:45:00 +03:00: Fixed n8n webhook round-trip: `sendToWebhook()` was ignoring the response body from n8n's "Respond to Webhook" node. Now reads and parses the inline response, stores it via `completeAnalysis()`, and returns results directly to the frontend instead of falling through to the (never-completing) polling flow.
+- 2026-04-13 12:15:00 +03:00: Pushed v2 to GitHub `matan-moshe-art/-APP-` on `master` (commit 2c00750): webhook callback/status routes, `pending-store`, UI/CSS updates, README V2, `AI_MEMORY.md` + `.cursor/rules/agent-memory.mdc`.
 
 ## Update Protocol
 
