@@ -1,0 +1,14 @@
+---
+description: Always read and maintain workspace memory
+alwaysApply: true
+---
+
+# Workspace Memory
+
+- At the start of every task, read `AI_MEMORY.md` before other substantive work.
+- Use `AI_MEMORY.md` as the primary durable memory for this workspace.
+- Update it when the user gives lasting preferences, constraints, decisions, notable requests, or when major outputs should be preserved for future turns.
+- Keep entries short, factual, and useful.
+- Never store secrets, tokens, passwords, or private keys there.
+- After any update, tell the user `Memory updated: <timestamp>` and make sure the file's `Last updated` field matches.
+- If `AI_MEMORY.md` is missing, create it.

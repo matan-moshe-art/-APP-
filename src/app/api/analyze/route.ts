@@ -3,37 +3,70 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { ANALYZE_SYSTEM_PROMPT } from "@/lib/analyze-prompt";
 import { getPrisma } from "@/lib/db";
+import {
+  markPending,
+  completeAnalysis,
+  type AnalysisResult,
+} from "@/lib/pending-store";
 
 const MIN_LEN = 10;
 const MAX_LEN = 5000;
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-const MAKE_TIMEOUT_MS = 25_000;
+const WEBHOOK_TIMEOUT_MS = 25_000;
 
-async function postToMakeWebhook(
+function resolveWebhookUrl(
+  raw: string,
+): { ok: true; url: string } | { ok: false; reason: "invalid_url" } {
+  const s = raw.trim();
+  if (!s) {
+    return { ok: false, reason: "invalid_url" };
+  }
+  try {
+    const u = new URL(s);
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      return { ok: false, reason: "invalid_url" };
+    }
+    return { ok: true, url: u.href };
+  } catch {
+    return { ok: false, reason: "invalid_url" };
+  }
+}
+
+function buildCallbackUrl(request: Request): string {
+  const url = new URL(request.url);
+  return `${url.origin}/api/analyze/callback`;
+}
+
+async function sendToWebhook(
   url: string,
-  payload: { text: string; correlationId: string },
-): Promise<void> {
-  const body = {
-    text: payload.text,
-    Text: payload.text,
-    body: payload.text,
-    message: payload.text,
-    correlationId: payload.correlationId,
-  };
-  const res = await fetch(url, {
-    method: "POST",
+  payload: { text: string; correlationId: string; callbackUrl: string },
+): Promise<unknown> {
+  const webhookUrl = new URL(url);
+  webhookUrl.searchParams.set("text", payload.text);
+  webhookUrl.searchParams.set("Text", payload.text);
+  webhookUrl.searchParams.set("body", payload.text);
+  webhookUrl.searchParams.set("message", payload.text);
+  webhookUrl.searchParams.set("correlationId", payload.correlationId);
+  webhookUrl.searchParams.set("callbackUrl", payload.callbackUrl);
+
+  const res = await fetch(webhookUrl, {
+    method: "GET",
     headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      Accept: "application/json",
+      Accept: "application/json, text/plain, */*",
     },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(MAKE_TIMEOUT_MS),
+    signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
   });
   if (!res.ok) {
     const snippet = await res.text().catch(() => "");
-    throw new Error(
-      `Make webhook HTTP ${res.status}: ${snippet.slice(0, 200)}`,
-    );
+    throw new Error(`Webhook HTTP ${res.status}: ${snippet.slice(0, 200)}`);
+  }
+
+  const text = await res.text().catch(() => "");
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
 }
 
@@ -59,11 +92,86 @@ function isAnalyzeResult(r: Record<string, unknown>): r is {
   );
 }
 
+/**
+ * n8n may return the result in various shapes — as a flat object with the
+ * four fields, nested under an `output` key (AI Agent node), or wrapped
+ * inside a stringified JSON value. Try all common shapes.
+ */
+function extractAnalysisResult(raw: unknown): AnalysisResult | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+
+  const obj = raw as Record<string, unknown>;
+
+  if (isAnalyzeResult(obj)) {
+    return {
+      meaning: obj.meaning.trim(),
+      urgency: obj.urgency.trim(),
+      action: obj.action.trim(),
+      suspicious: obj.suspicious.trim(),
+    };
+  }
+
+  // n8n AI Agent wraps output in an `output` key (string with JSON inside)
+  const nested = obj.output ?? obj.result ?? obj.data;
+  if (typeof nested === "string") {
+    try {
+      const parsed = JSON.parse(nested);
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        isAnalyzeResult(parsed as Record<string, unknown>)
+      ) {
+        return {
+          meaning: (parsed as AnalysisResult).meaning.trim(),
+          urgency: (parsed as AnalysisResult).urgency.trim(),
+          action: (parsed as AnalysisResult).action.trim(),
+          suspicious: (parsed as AnalysisResult).suspicious.trim(),
+        };
+      }
+    } catch {
+      // not valid JSON — ignore
+    }
+  }
+
+  if (
+    nested &&
+    typeof nested === "object" &&
+    !Array.isArray(nested) &&
+    isAnalyzeResult(nested as Record<string, unknown>)
+  ) {
+    const n = nested as AnalysisResult;
+    return {
+      meaning: n.meaning.trim(),
+      urgency: n.urgency.trim(),
+      action: n.action.trim(),
+      suspicious: n.suspicious.trim(),
+    };
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
-  const makeUrl = process.env.MAKE_WEBHOOK_URL?.trim();
+  const webhookUrlRaw = process.env.ANALYZE_WEBHOOK_URL?.trim() ?? "";
+  const webhookResolved = webhookUrlRaw
+    ? resolveWebhookUrl(webhookUrlRaw)
+    : null;
+  const webhookUrl = webhookResolved?.ok ? webhookResolved.url : null;
   const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
-  if (!makeUrl && !hasOpenAI) {
-    console.error("Set MAKE_WEBHOOK_URL and/or OPENAI_API_KEY");
+  if (!webhookUrl && !hasOpenAI) {
+    if (webhookUrlRaw && webhookResolved && !webhookResolved.ok) {
+      console.error("ANALYZE_WEBHOOK_URL is not a valid http(s) URL");
+      return NextResponse.json(
+        {
+          error: "webhook_config",
+          message:
+            "כתובת ה-webhook בשרת לא תקינה. נדרש קישור מלא שמתחיל ב-https://.",
+        },
+        { status: 500 },
+      );
+    }
+    console.error("Set ANALYZE_WEBHOOK_URL and/or OPENAI_API_KEY");
     return NextResponse.json({ error: "server_config" }, { status: 500 });
   }
 
@@ -112,15 +220,36 @@ export async function POST(request: Request) {
 
   const correlationId = randomUUID();
 
-  if (makeUrl) {
+  if (webhookUrl) {
+    const callbackUrl =
+      process.env.CALLBACK_BASE_URL
+        ? `${process.env.CALLBACK_BASE_URL.replace(/\/+$/, "")}/api/analyze/callback`
+        : buildCallbackUrl(request);
+
+    markPending(correlationId);
+
+    let webhookResponse: unknown = null;
     try {
-      await postToMakeWebhook(makeUrl, { text: trimmed, correlationId });
+      webhookResponse = await sendToWebhook(webhookUrl, {
+        text: trimmed,
+        correlationId,
+        callbackUrl,
+      });
     } catch (err: unknown) {
-      console.error("Make webhook error:", err);
+      console.error("Webhook error:", err);
       return NextResponse.json(
-        { error: "make_webhook", message: "שליחה ל-Make נכשלה. נסו שוב." },
+        { error: "webhook_delivery", message: "שליחה ל-webhook נכשלה. נסו שוב." },
         { status: 502 },
       );
+    }
+
+    // n8n's "Respond to Webhook" returns the result inline in the HTTP
+    // response. Extract it and store it so the frontend polling picks it up
+    // immediately (or even return it directly).
+    const inlineResult = extractAnalysisResult(webhookResponse);
+    if (inlineResult) {
+      completeAnalysis(correlationId, inlineResult);
+      return NextResponse.json(inlineResult);
     }
   }
 
@@ -129,8 +258,6 @@ export async function POST(request: Request) {
       {
         accepted: true,
         correlationId,
-        message:
-          "הבקשה נשלחה לעיבוד. התוצאה תגיע כשהתרחיש ב-Make יסיים (למשל ב-webhook חוזר).",
       },
       { status: 202 },
     );

@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="he" dir="rtl" className={`${heebo.variable} h-full`}>
-      <body className="min-h-full bg-stone-100 font-sans text-stone-900 antialiased">
+      <body className="bg-mesh min-h-full font-sans text-stone-900 antialiased">
         {children}
       </body>
     </html>
