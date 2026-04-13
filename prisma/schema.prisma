@@ -1,0 +1,24 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Analysis {
+  id               Int      @id @default(autoincrement())
+  createdAt        DateTime @default(now()) @map("created_at")
+  inputText        String   @map("input_text")
+  resultMeaning    String   @map("result_meaning")
+  resultUrgency    String   @map("result_urgency")
+  resultAction     String   @map("result_action")
+  resultSuspicious String   @map("result_suspicious")
+  modelUsed        String   @map("model_used")
+  durationMs       Int      @map("duration_ms")
+
+  @@map("analyses")
+}

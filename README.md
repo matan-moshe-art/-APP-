@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# מנתח הודעות רשמיות (Hebrew Official Message Analyzer) — V1
 
-## Getting Started
+Single-page Hebrew RTL app: paste an official message, get four fixed sections (meaning, urgency, actions, suspicious signals).
 
-First, run the development server:
+## Setup
+
+1. Copy environment variables:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Set `OPENAI_API_KEY` in `.env`.
+
+3. Optional: set `DATABASE_URL` (default `file:./dev.db`) to log each successful analysis. If unset, the app runs without persistence.
+
+4. Install and migrate:
+
+   ```bash
+   npm install
+   npx prisma migrate deploy
+   npm run dev
+   ```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Build
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run build` runs `prisma generate` first.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy (Vercel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
+2. Add **Environment Variables**:
+   - `OPENAI_API_KEY` (required)
+   - Optional: `OPENAI_MODEL` (default `gpt-4o-mini`)
+   - Optional: For request logging, use a hosted database (e.g. [Vercel Postgres](https://vercel.com/storage/postgres)) and set `DATABASE_URL` to the Postgres connection string. Without it, analyses are not stored (the API still works).
 
-## Learn More
+SQLite files are not persisted across Vercel serverless invocations; use Postgres (or similar) for production logging.
 
-To learn more about Next.js, take a look at the following resources:
+## Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Next.js (App Router), TypeScript, Tailwind CSS v4
+- OpenAI Chat Completions (JSON mode)
+- Prisma + SQLite (optional local logging)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Disclaimer
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This tool does not provide legal advice; it aims for clarity only.
