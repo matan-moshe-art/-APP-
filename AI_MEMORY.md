@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-02 15:42:00 +03:00
+Last updated: 2026-05-02 15:56:00 +03:00
 
 ## Durable Preferences
 
@@ -18,6 +18,7 @@ Last updated: 2026-05-02 15:42:00 +03:00
 
 ## Recent Requests
 
+- 2026-05-02 15:56:00 +03:00: User asked to replace the old n8n test webhook everywhere with the working production webhook URL they provided.
 - 2026-05-02 15:42:00 +03:00: User removed webhook authentication entirely in n8n and asked to proceed with no-auth setup.
 - 2026-05-02 15:27:00 +03:00: User requested full migration from old webhook auth to new n8n Header Auth and asked to rewrite all old auth code before re-testing webhook delivery.
 - 2026-05-02 15:20:00 +03:00: User reported new analyze delivery failure with error code 205 and asked for autonomous fix; shared n8n test webhook URL, webhook id, and Basic Auth details (username + blank-password sentinel).
@@ -62,6 +63,7 @@ Last updated: 2026-05-02 15:42:00 +03:00
 
 ## Recent Outputs
 
+- 2026-05-02 15:56:00 +03:00: Updated local runtime webhook target to production URL in `.env.local` by replacing `ANALYZE_WEBHOOK_URL` from `/webhook-test/...` to `/webhook/b82ce861-9cb4-4f7b-ac31-1d3a9c26a732`; verified remaining `webhook-test` references are only historical logs/memory notes.
 - 2026-05-02 15:42:00 +03:00: Synced local app env to no-auth mode for webhook calls by clearing `ANALYZE_WEBHOOK_AUTH_HEADER_NAME` and `ANALYZE_WEBHOOK_AUTH_HEADER_VALUE` in `.env.local`; live test call without custom auth header still returns n8n 404 not-registered on the test URL, confirming remaining issue is webhook listen/activation state in n8n.
 - 2026-05-02 15:27:00 +03:00: Replaced webhook auth implementation from Basic Auth to Header Auth across app code and docs: `src/app/api/analyze/route.ts` now injects a single custom header from `ANALYZE_WEBHOOK_AUTH_HEADER_NAME`/`ANALYZE_WEBHOOK_AUTH_HEADER_VALUE`; removed Basic Auth env usage from `.env.local`, `.env.example`, and README instructions. Live probes to both test and production webhook endpoints still return n8n 404 not-registered, indicating webhook activation/listening state issue on n8n side rather than app auth code.
 - 2026-05-02 15:20:00 +03:00: Hardened webhook auth parsing to treat n8n placeholder values starting with `__n8n_BLANK_VALUE_` as empty password, updated local webhook auth env to the latest provided username with empty password, and live-probed both production and test endpoints; both return 404 not-registered from n8n (`/webhook` requires active workflow, `/webhook-test` requires active "Listen/Execute workflow" session).
