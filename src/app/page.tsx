@@ -58,21 +58,21 @@ const SECTIONS: {
     stagger: "stagger-2",
   },
   {
-    key: "action",
-    title: "מה לעשות עכשיו",
-    icon: "\u2705",
-    accent:
-      "border-teal-500/25 bg-gradient-to-bl from-teal-950/40 to-zinc-950/70",
-    bar: "bg-gradient-to-b from-teal-400 to-cyan-600",
-    stagger: "stagger-3",
-  },
-  {
     key: "suspicious",
     title: "מה נראה חשוד או חריג",
     icon: "\u{1F50D}",
     accent:
       "border-amber-500/25 bg-gradient-to-bl from-amber-950/40 to-zinc-950/70",
     bar: "bg-gradient-to-b from-amber-400 to-yellow-600",
+    stagger: "stagger-3",
+  },
+  {
+    key: "action",
+    title: "מה לעשות עכשיו",
+    icon: "\u2705",
+    accent:
+      "border-teal-500/25 bg-gradient-to-bl from-teal-950/40 to-zinc-950/70",
+    bar: "bg-gradient-to-b from-teal-400 to-cyan-600",
     stagger: "stagger-4",
   },
 ];

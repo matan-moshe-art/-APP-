@@ -18,6 +18,98 @@ function isValidResult(v: unknown): v is AnalysisResult {
   );
 }
 
+function parsePossibleJson(raw: string): unknown | null {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function extractCorrelationId(raw: unknown): string {
+  const queue: unknown[] = [raw];
+  const visited = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+
+    if (typeof current === "string") {
+      const parsed = parsePossibleJson(current);
+      if (parsed) queue.push(parsed);
+      continue;
+    }
+
+    if (Array.isArray(current)) {
+      for (const item of current) queue.push(item);
+      continue;
+    }
+
+    if (typeof current !== "object") continue;
+    const obj = current as Record<string, unknown>;
+
+    const direct =
+      typeof obj.correlationId === "string"
+        ? obj.correlationId.trim()
+        : typeof obj.correlationID === "string"
+          ? obj.correlationID.trim()
+          : typeof obj.correlation_id === "string"
+            ? obj.correlation_id.trim()
+            : "";
+    if (direct) return direct;
+
+    queue.push(obj.body, obj.result, obj.data, obj.json, obj.query, obj.payload);
+    for (const value of Object.values(obj)) queue.push(value);
+  }
+
+  return "";
+}
+
+function extractResult(raw: unknown): AnalysisResult | null {
+  const queue: unknown[] = [raw];
+  const visited = new Set<unknown>();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
+
+    if (typeof current === "string") {
+      const parsed = parsePossibleJson(current);
+      if (parsed) queue.push(parsed);
+      continue;
+    }
+
+    if (Array.isArray(current)) {
+      for (const item of current) queue.push(item);
+      continue;
+    }
+
+    if (typeof current !== "object") continue;
+    const obj = current as Record<string, unknown>;
+    if (isValidResult(obj)) {
+      return {
+        meaning: obj.meaning.trim(),
+        urgency: obj.urgency.trim(),
+        action: obj.action.trim(),
+        suspicious: obj.suspicious.trim(),
+      };
+    }
+
+    queue.push(obj.output, obj.result, obj.data, obj.json, obj.body, obj.response);
+    for (const value of Object.values(obj)) queue.push(value);
+  }
+
+  return null;
+}
+
 export async function POST(request: Request) {
   if (CALLBACK_SECRET) {
     const auth = request.headers.get("x-callback-secret") ?? "";
@@ -33,13 +125,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return NextResponse.json({ error: "invalid_body" }, { status: 400 });
-  }
-
-  const obj = body as Record<string, unknown>;
-  const correlationId =
-    typeof obj.correlationId === "string" ? obj.correlationId.trim() : "";
+  const correlationId = extractCorrelationId(body);
 
   if (!correlationId) {
     return NextResponse.json(
@@ -48,21 +134,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const result: AnalysisResult | null = isValidResult(obj)
-    ? {
-        meaning: (obj as AnalysisResult).meaning.trim(),
-        urgency: (obj as AnalysisResult).urgency.trim(),
-        action: (obj as AnalysisResult).action.trim(),
-        suspicious: (obj as AnalysisResult).suspicious.trim(),
-      }
-    : isValidResult(obj.result)
-      ? {
-          meaning: (obj.result as AnalysisResult).meaning.trim(),
-          urgency: (obj.result as AnalysisResult).urgency.trim(),
-          action: (obj.result as AnalysisResult).action.trim(),
-          suspicious: (obj.result as AnalysisResult).suspicious.trim(),
-        }
-      : null;
+  const result: AnalysisResult | null = extractResult(body);
 
   if (!result) {
     return NextResponse.json(

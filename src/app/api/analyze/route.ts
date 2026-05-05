@@ -15,6 +15,19 @@ const MIN_LEN = 10;
 const MAX_LEN = 5000;
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 const WEBHOOK_TIMEOUT_MS = 25_000;
+const USER_ERROR_PREFIX =
+  "לא הצלחנו להשלים את הבקשה כרגע. נסו שוב בעוד רגע.";
+
+function withEventCode(code: number): {
+  eventCode: string;
+  message: string;
+} {
+  const eventCode = `AN-${code}`;
+  return {
+    eventCode,
+    message: `${USER_ERROR_PREFIX} קוד אירוע: ${eventCode}`,
+  };
+}
 
 function resolveWebhookUrl(
   raw: string,
@@ -101,7 +114,7 @@ async function sendToWebhook(
   try {
     return JSON.parse(text);
   } catch {
-    return null;
+    return text;
   }
 }
 
@@ -133,55 +146,49 @@ function isAnalyzeResult(r: Record<string, unknown>): r is {
  * inside a stringified JSON value. Try all common shapes.
  */
 function extractAnalysisResult(raw: unknown): AnalysisResult | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const queue: unknown[] = [raw];
+  const visited = new Set<unknown>();
 
-  const obj = raw as Record<string, unknown>;
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || visited.has(current)) continue;
+    visited.add(current);
 
-  if (isAnalyzeResult(obj)) {
-    return {
-      meaning: obj.meaning.trim(),
-      urgency: obj.urgency.trim(),
-      action: obj.action.trim(),
-      suspicious: obj.suspicious.trim(),
-    };
-  }
-
-  // n8n AI Agent wraps output in an `output` key (string with JSON inside)
-  const nested = obj.output ?? obj.result ?? obj.data;
-  if (typeof nested === "string") {
-    try {
-      const parsed = JSON.parse(nested);
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        !Array.isArray(parsed) &&
-        isAnalyzeResult(parsed as Record<string, unknown>)
-      ) {
-        return {
-          meaning: (parsed as AnalysisResult).meaning.trim(),
-          urgency: (parsed as AnalysisResult).urgency.trim(),
-          action: (parsed as AnalysisResult).action.trim(),
-          suspicious: (parsed as AnalysisResult).suspicious.trim(),
-        };
+    if (typeof current === "string") {
+      try {
+        queue.push(JSON.parse(current));
+      } catch {
+        const m = current.match(/\{[\s\S]*\}/);
+        if (m) {
+          try {
+            queue.push(JSON.parse(m[0]));
+          } catch {
+            // not JSON-like enough; ignore
+          }
+        }
       }
-    } catch {
-      // not valid JSON; ignore
+      continue;
     }
-  }
 
-  if (
-    nested &&
-    typeof nested === "object" &&
-    !Array.isArray(nested) &&
-    isAnalyzeResult(nested as Record<string, unknown>)
-  ) {
-    const n = nested as AnalysisResult;
-    return {
-      meaning: n.meaning.trim(),
-      urgency: n.urgency.trim(),
-      action: n.action.trim(),
-      suspicious: n.suspicious.trim(),
-    };
+    if (Array.isArray(current)) {
+      for (const item of current) queue.push(item);
+      continue;
+    }
+
+    if (typeof current !== "object") continue;
+    const obj = current as Record<string, unknown>;
+
+    if (isAnalyzeResult(obj)) {
+      return {
+        meaning: obj.meaning.trim(),
+        urgency: obj.urgency.trim(),
+        action: obj.action.trim(),
+        suspicious: obj.suspicious.trim(),
+      };
+    }
+
+    queue.push(obj.output, obj.result, obj.data, obj.json, obj.body, obj.response);
+    for (const value of Object.values(obj)) queue.push(value);
   }
 
   return null;
@@ -221,7 +228,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "webhook_config",
-          message: "אירעה תקלה בשירות הניתוח. קוד שגיאה: 101",
+          ...withEventCode(101),
         },
         { status: 500 },
       );
@@ -230,7 +237,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "server_config",
-        message: "שירות הניתוח לא זמין כרגע. קוד שגיאה: 102",
+        ...withEventCode(102),
       },
       { status: 500 },
     );
@@ -303,12 +310,26 @@ export async function POST(request: Request) {
       // #endregion
       const errMsg = err instanceof Error ? err.message : String(err);
       let errorCode = 201;
+      let eventPayload = withEventCode(errorCode);
+      const isTimeoutError =
+        errMsg.includes("timed out") ||
+        errMsg.includes("TimeoutError") ||
+        errMsg.includes("abort");
+      if (isTimeoutError) {
+        return NextResponse.json(
+          {
+            accepted: true,
+            correlationId,
+          },
+          { status: 202 },
+        );
+      }
       if (errMsg.includes("HTTP 401") || errMsg.includes("HTTP 403")) errorCode = 202;
       else if (errMsg.includes("HTTP 404")) errorCode = 205;
-      else if (errMsg.includes("timed out") || errMsg.includes("TimeoutError") || errMsg.includes("abort")) errorCode = 203;
       else if (errMsg.includes("ENOTFOUND") || errMsg.includes("ECONNREFUSED")) errorCode = 204;
+      eventPayload = withEventCode(errorCode);
       return NextResponse.json(
-        { error: "delivery_failed", message: `אירעה תקלה בעת שליחת הניתוח. קוד שגיאה: ${errorCode}` },
+        { error: "delivery_failed", ...eventPayload },
         { status: 502 },
       );
     }
@@ -320,6 +341,19 @@ export async function POST(request: Request) {
     if (inlineResult) {
       completeAnalysis(correlationId, inlineResult);
       return NextResponse.json(inlineResult);
+    }
+
+    // The webhook call succeeded but returned a shape we cannot parse and
+    // there is no local OpenAI fallback; returning 202 would cause a long
+    // waiting state with no final result.
+    if (!hasOpenAI) {
+      return NextResponse.json(
+        {
+          error: "webhook_unrecognized_response",
+          ...withEventCode(207),
+        },
+        { status: 502 },
+      );
     }
   }
 
@@ -353,7 +387,7 @@ export async function POST(request: Request) {
     const raw = completion.choices[0]?.message?.content;
     if (!raw) {
       return NextResponse.json(
-        { error: "ai_empty", message: "שירות הניתוח לא החזיר תוצאה. קוד שגיאה: 301" },
+        { error: "ai_empty", ...withEventCode(301) },
         { status: 502 },
       );
     }
@@ -363,7 +397,7 @@ export async function POST(request: Request) {
       parsed = JSON.parse(raw);
     } catch {
       return NextResponse.json(
-        { error: "ai_parse", message: "תוצאת הניתוח לא תקינה. קוד שגיאה: 302" },
+        { error: "ai_parse", ...withEventCode(302) },
         { status: 502 },
       );
     }
@@ -375,7 +409,7 @@ export async function POST(request: Request) {
       !isAnalyzeResult(parsed as Record<string, unknown>)
     ) {
       return NextResponse.json(
-        { error: "ai_shape", message: "תוצאת הניתוח לא תקינה. קוד שגיאה: 303" },
+        { error: "ai_shape", ...withEventCode(303) },
         { status: 502 },
       );
     }
@@ -412,7 +446,7 @@ export async function POST(request: Request) {
   } catch (err: unknown) {
     console.error("OpenAI error:", err);
     return NextResponse.json(
-      { error: "upstream", message: "שירות הניתוח נתקל בבעיה. קוד שגיאה: 304" },
+      { error: "upstream", ...withEventCode(304) },
       { status: 502 },
     );
   }

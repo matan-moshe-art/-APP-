@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-02 15:56:00 +03:00
+Last updated: 2026-05-04 12:24:03 +03:00
 
 ## Durable Preferences
 
@@ -18,11 +18,15 @@ Last updated: 2026-05-02 15:56:00 +03:00
 
 ## Recent Requests
 
-- 2026-05-02 15:56:00 +03:00: User asked to replace the old n8n test webhook everywhere with the working production webhook URL they provided.
-- 2026-05-02 15:42:00 +03:00: User removed webhook authentication entirely in n8n and asked to proceed with no-auth setup.
-- 2026-05-02 15:27:00 +03:00: User requested full migration from old webhook auth to new n8n Header Auth and asked to rewrite all old auth code before re-testing webhook delivery.
-- 2026-05-02 15:20:00 +03:00: User reported new analyze delivery failure with error code 205 and asked for autonomous fix; shared n8n test webhook URL, webhook id, and Basic Auth details (username + blank-password sentinel).
-- 2026-05-02 15:15:00 +03:00: User reported analyze delivery failure (`קוד שגיאה: 202`) and asked to fully fix webhook delivery from the app to n8n.
+- 2026-05-04 12:24:03 +03:00: User requested wiping old webhook information, registering only the new webhook endpoint, and switching webhook mode from test to production.
+- 2026-05-02 18:25:48 +03:00: User requested changing analyzer result card order to: meaning, urgency, suspicious, then action.
+- 2026-05-02 18:15:26 +03:00: User reported AN-203 timeout while n8n flow itself succeeds, and requested fixing the return path so app reliably receives n8n output and displays it in the analyzer UI.
+- 2026-05-02 18:11:31 +03:00: User requested masking analyze-flow errors from end users: show only a special error/event code (for backend mapping) and avoid exposing technical causes like broken webhook details.
+- 2026-05-02 18:05:27 +03:00: User reported analyzer UI gets stuck while n8n receives the request; asked to debug return path where response payload appears to be lost/unrecognized by the app.
+- 2026-05-02 17:48:00 +03:00: User specified the true target prompt: a single Hebrew system prompt for the app's built-in AI message analyzer (not GPT-builder/meta), focused on understanding text meaning, urgency, next steps, and unusual/suspicious signals.
+- 2026-05-02 17:43:00 +03:00: User clarified the app prompt must serve general users and not be limited to B2B use-cases.
+- 2026-05-02 17:42:00 +03:00: User clarified the final app prompt must contain zero GPT Builder references and be framed only as the app's own assistant behavior (not LLM-builder/meta context).
+- 2026-05-02 17:40:00 +03:00: User asked to merge a weak two-part Hebrew GPTBuilder meta-prompt into one strong single application prompt that stays fully in-scope, handles edge cases, and always knows what to do.
 - 2026-05-01 23:02:00 +03:00: User asked to harden the Hebrew GPTBuilder meta-prompt so the assistant never asks multiple questions per turn or trailing follow-up questions (e.g. "anything else?") due to unreliable memory between chat turns.
 - 2026-05-01 22:55:00 +03:00: User reported the previous n8n scenario broke and asked to wire a brand-new n8n webhook (Basic Auth) into the app and remove old n8n data; full flexibility granted to achieve reconnection.
 - 2026-05-01 22:50:00 +03:00: User requested the GPTBuilder meta-prompt fully in Hebrew (including strict template headings, demo body, and refusal text — no English remnants except UI path Explore GPTs → Create).
@@ -63,11 +67,15 @@ Last updated: 2026-05-02 15:56:00 +03:00
 
 ## Recent Outputs
 
-- 2026-05-02 15:56:00 +03:00: Updated local runtime webhook target to production URL in `.env.local` by replacing `ANALYZE_WEBHOOK_URL` from `/webhook-test/...` to `/webhook/b82ce861-9cb4-4f7b-ac31-1d3a9c26a732`; verified remaining `webhook-test` references are only historical logs/memory notes.
-- 2026-05-02 15:42:00 +03:00: Synced local app env to no-auth mode for webhook calls by clearing `ANALYZE_WEBHOOK_AUTH_HEADER_NAME` and `ANALYZE_WEBHOOK_AUTH_HEADER_VALUE` in `.env.local`; live test call without custom auth header still returns n8n 404 not-registered on the test URL, confirming remaining issue is webhook listen/activation state in n8n.
-- 2026-05-02 15:27:00 +03:00: Replaced webhook auth implementation from Basic Auth to Header Auth across app code and docs: `src/app/api/analyze/route.ts` now injects a single custom header from `ANALYZE_WEBHOOK_AUTH_HEADER_NAME`/`ANALYZE_WEBHOOK_AUTH_HEADER_VALUE`; removed Basic Auth env usage from `.env.local`, `.env.example`, and README instructions. Live probes to both test and production webhook endpoints still return n8n 404 not-registered, indicating webhook activation/listening state issue on n8n side rather than app auth code.
-- 2026-05-02 15:20:00 +03:00: Hardened webhook auth parsing to treat n8n placeholder values starting with `__n8n_BLANK_VALUE_` as empty password, updated local webhook auth env to the latest provided username with empty password, and live-probed both production and test endpoints; both return 404 not-registered from n8n (`/webhook` requires active workflow, `/webhook-test` requires active "Listen/Execute workflow" session).
-- 2026-05-02 15:15:00 +03:00: Diagnosed webhook delivery failures using local debug logs and live POST probe: `webhook-test` path returned 403 (`Authorization data is wrong`) and production path currently returns 404 (`webhook ... is not registered`, workflow inactive). Updated `.env.local` to production webhook URL, hardened Basic Auth env parsing in `src/app/api/analyze/route.ts` (trim values + accept USERNAME/PASS aliases), and added explicit error-code mapping for HTTP 404 (`205`) to distinguish inactive/missing webhook route from auth failures.
+- 2026-05-04 12:24:03 +03:00: Cleared prior webhook debug artifacts, set local webhook config to production endpoint in `.env.local` (`ANALYZE_WEBHOOK_URL=https://cursor-test.app.n8n.cloud/webhook/b82ce861-9cb4-4f7b-ac31-1d3a9c26a732`), and removed explicit test-webhook 404 branch in `src/app/api/analyze/route.ts` so handling is production-oriented.
+- 2026-05-02 18:25:48 +03:00: Reordered analyzer result sections in `src/app/page.tsx` so cards now render as `meaning` -> `urgency` -> `suspicious` -> `action` (including matching stagger animation order).
+- 2026-05-02 18:15:26 +03:00: Improved n8n return-path reliability: `src/app/api/analyze/route.ts` now treats webhook timeout/abort as async accepted (`202` + `correlationId`) so frontend polling can continue instead of failing with AN-203 immediately, and `src/app/api/analyze/callback/route.ts` now deeply extracts `correlationId` and analysis fields from nested/array/stringified callback payload shapes.
+- 2026-05-02 18:11:31 +03:00: Standardized user-facing technical errors in `src/app/api/analyze/route.ts` to a generic Hebrew message + explicit `eventCode` format (`AN-xxx`), including delivery/webhook and OpenAI upstream failures (e.g., prior 206 now returns masked message with `AN-206` only).
+- 2026-05-02 18:05:27 +03:00: Hardened `src/app/api/analyze/route.ts` webhook result parsing to handle more n8n response shapes (arrays, nested objects, stringified JSON, JSON embedded in text), preserved non-JSON webhook bodies for parsing attempts, and added explicit non-stuck failure response `webhook_unrecognized_response` (error code `207`) when webhook returns unrecognized output and no OpenAI fallback is available.
+- 2026-05-02 17:48:00 +03:00: Delivered a new Hebrew single-prompt template for the app AI analyzer with explicit role, tasks, goal, five key steps, strict JSON output contract (`meaning/urgency/action/suspicious`), user-message placeholder, and final safety notes.
+- 2026-05-02 17:43:00 +03:00: Delivered a revised domain-agnostic Hebrew app prompt (general audience) replacing previous B2B-only positioning while preserving strict scope and refusal rules.
+- 2026-05-02 17:42:00 +03:00: Delivered a new Hebrew single-prompt version for the app with all GPT Builder mentions removed and strict in-scope refusal behavior preserved.
+- 2026-05-02 17:40:00 +03:00: Delivered a consolidated Hebrew single-prompt template for the GPTBuilder app with strict scope control, one-question-per-turn intake, rigid instruction-section order, iterative approval gates, and fixed off-topic refusal handling.
 - 2026-05-01 23:02:00 +03:00: Provided Hebrew add-on blocks for GPTBuilder meta-prompt: one question per turn, no stacked questions, ban on fake follow-ups ("מה עוד?", "יש עוד משהו?"); optional internal checklist without asking; preference recorded in `AI_MEMORY.md`.
 - 2026-05-01 22:55:00 +03:00: Reconnected n8n analyze webhook with new Production URL + Basic Auth: `src/app/api/analyze/route.ts` now POSTs JSON body (and mirrors fields on query params) and sends `Authorization: Basic ...` when `ANALYZE_WEBHOOK_BASIC_AUTH_USER`/`ANALYZE_WEBHOOK_BASIC_AUTH_PASSWORD` are set; `.env.local` updated with the new `ANALYZE_WEBHOOK_URL` (`https://cursor-test.app.n8n.cloud/webhook/b82ce861-9cb4-4f7b-ac31-1d3a9c26a732`) plus Basic Auth credentials; `.env.example` purged of the old hardcoded webhook URL and now documents the Basic Auth env vars and POST/JSON contract; README updated accordingly.
 - 2026-05-01 22:50:00 +03:00: Delivered fully Hebrew GPTBuilder prompt: Hebrew strict-template headings, Hebrew Tiny Demo (outreach example), Hebrew refusal template; Identity updated to Hebrew communication; UI navigation string kept in English.
