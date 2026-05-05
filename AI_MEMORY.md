@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-04 12:24:03 +03:00
+Last updated: 2026-05-05 16:09:38 +03:00
 
 ## Durable Preferences
 
@@ -18,6 +18,7 @@ Last updated: 2026-05-04 12:24:03 +03:00
 
 ## Recent Requests
 
+- 2026-05-05 16:09:38 +03:00: User requested pushing all currently updated code to GitHub so the newest version is saved remotely.
 - 2026-05-04 12:24:03 +03:00: User requested wiping old webhook information, registering only the new webhook endpoint, and switching webhook mode from test to production.
 - 2026-05-02 18:25:48 +03:00: User requested changing analyzer result card order to: meaning, urgency, suspicious, then action.
 - 2026-05-02 18:15:26 +03:00: User reported AN-203 timeout while n8n flow itself succeeds, and requested fixing the return path so app reliably receives n8n output and displays it in the analyzer UI.
@@ -67,6 +68,7 @@ Last updated: 2026-05-04 12:24:03 +03:00
 
 ## Recent Outputs
 
+- 2026-05-05 16:09:38 +03:00: Pushed latest local changes to GitHub `master` in `matan-moshe-art/-APP-` with commit `86b3a7b` (`fix(analyze): harden webhook parsing and response handling`).
 - 2026-05-04 12:24:03 +03:00: Cleared prior webhook debug artifacts, set local webhook config to production endpoint in `.env.local` (`ANALYZE_WEBHOOK_URL=https://cursor-test.app.n8n.cloud/webhook/b82ce861-9cb4-4f7b-ac31-1d3a9c26a732`), and removed explicit test-webhook 404 branch in `src/app/api/analyze/route.ts` so handling is production-oriented.
 - 2026-05-02 18:25:48 +03:00: Reordered analyzer result sections in `src/app/page.tsx` so cards now render as `meaning` -> `urgency` -> `suspicious` -> `action` (including matching stagger animation order).
 - 2026-05-02 18:15:26 +03:00: Improved n8n return-path reliability: `src/app/api/analyze/route.ts` now treats webhook timeout/abort as async accepted (`202` + `correlationId`) so frontend polling can continue instead of failing with AN-203 immediately, and `src/app/api/analyze/callback/route.ts` now deeply extracts `correlationId` and analysis fields from nested/array/stringified callback payload shapes.
