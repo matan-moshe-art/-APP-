@@ -8,7 +8,15 @@ import { activateInMemoryTestEntitlement } from "@/lib/billing/test-mode";
 export async function POST() {
   const user = await getAuthenticatedUser();
   if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        eventCode: "BILL-402",
+        message:
+          "צריך להיות מחובר כדי להפעיל מנוי. קוד אירוע: BILL-402",
+      },
+      { status: 401 },
+    );
   }
 
   try {
@@ -42,7 +50,9 @@ export async function POST() {
       return NextResponse.json(
         {
           error: "billing_not_configured",
-          message: "מערכת הסליקה עדיין לא הוגדרה.",
+          eventCode: "BILL-101",
+          message:
+            "מערכת הסליקה עדיין לא הוגדרה. קוד אירוע: BILL-101",
         },
         { status: 503 },
       );
@@ -53,7 +63,8 @@ export async function POST() {
       return NextResponse.json(
         {
           error: "provider_not_supported",
-          message: `ספק לא נתמך: ${provider}`,
+          eventCode: "BILL-102",
+          message: `ספק לא נתמך: ${provider}. קוד אירוע: BILL-102`,
         },
         { status: 400 },
       );
@@ -70,7 +81,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error: "checkout_create_failed",
-        message: "לא ניתן להפעיל מנוי כרגע. בדקו הגדרות מסד נתונים וחיוב.",
+        eventCode: "BILL-201",
+        message:
+          "לא ניתן להפעיל מנוי כרגע. בדקו הגדרות מסד נתונים וחיוב. קוד אירוע: BILL-201",
       },
       { status: 502 },
     );

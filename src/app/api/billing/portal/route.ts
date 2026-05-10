@@ -19,7 +19,15 @@ export async function POST() {
 
   const user = await getAuthenticatedUser();
   if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        eventCode: "BILL-404",
+        message:
+          "צריך להיות מחובר כדי לפתוח את ניהול המנוי. קוד אירוע: BILL-404",
+      },
+      { status: 401 },
+    );
   }
 
   const provider = getBillingProvider();
@@ -36,7 +44,9 @@ export async function POST() {
       return NextResponse.json(
         {
           error: "portal_not_configured",
-          message: "ניהול מנוי אינו זמין כרגע.",
+          eventCode: "BILL-302",
+          message:
+            "ניהול מנוי אינו זמין כרגע. קוד אירוע: BILL-302",
         },
         { status: 503 },
       );
@@ -47,7 +57,11 @@ export async function POST() {
   }
 
   return NextResponse.json(
-    { error: "provider_not_supported", message: `Unsupported provider: ${provider}` },
+    {
+      error: "provider_not_supported",
+      eventCode: "BILL-103",
+      message: `ספק חיוב לא נתמך: ${provider}. קוד אירוע: BILL-103`,
+    },
     { status: 400 },
   );
 }

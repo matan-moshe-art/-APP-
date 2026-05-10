@@ -7,7 +7,14 @@ import { hasInMemoryTestEntitlement } from "@/lib/billing/test-mode";
 export async function GET() {
   const user = await getAuthenticatedUser();
   if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        eventCode: "BILL-401",
+        message: "צריך להיות מחובר כדי לבדוק סטטוס מנוי. קוד אירוע: BILL-401",
+      },
+      { status: 401 },
+    );
   }
 
   try {
@@ -68,7 +75,9 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "billing_status_unavailable",
-        message: "לא ניתן לטעון כרגע את סטטוס המנוי.",
+        eventCode: "BILL-501",
+        message:
+          "לא ניתן לטעון כרגע את סטטוס המנוי. קוד אירוע: BILL-501",
       },
       { status: 503 },
     );

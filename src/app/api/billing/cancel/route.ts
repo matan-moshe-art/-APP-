@@ -6,7 +6,15 @@ import { deactivateInMemoryTestEntitlement } from "@/lib/billing/test-mode";
 export async function POST() {
   const user = await getAuthenticatedUser();
   if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        eventCode: "BILL-403",
+        message:
+          "צריך להיות מחובר כדי לבטל מנוי. קוד אירוע: BILL-403",
+      },
+      { status: 401 },
+    );
   }
 
   const zeroPriceTestMode = process.env.BILLING_ZERO_PRICE_TEST_MODE !== "false";
@@ -14,7 +22,9 @@ export async function POST() {
     return NextResponse.json(
       {
         error: "cancel_not_available",
-        message: "ביטול מנוי זמין כרגע דרך פורטל הסליקה בלבד.",
+        eventCode: "BILL-301",
+        message:
+          "ביטול מנוי זמין כרגע דרך פורטל הסליקה בלבד. קוד אירוע: BILL-301",
       },
       { status: 409 },
     );

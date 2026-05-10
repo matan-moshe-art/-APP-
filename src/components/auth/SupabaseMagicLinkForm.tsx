@@ -16,59 +16,130 @@ function safeNextPath(raw: string | null): string {
 type AuthMethod = "magic" | "password";
 type PasswordMode = "signin" | "signup";
 
-function mapAuthErrorToHebrew(raw: string | null): string | null {
+type CodedError = { message: string; code: string };
+
+function mapAuthErrorToCoded(raw: string | null): CodedError | null {
   if (!raw) return null;
 
   if (raw === "auth" || raw === "session") {
-    return "לא הצלחנו להשלים את ההתחברות. נסו שוב.";
+    return {
+      message: "לא הצלחנו להשלים את ההתחברות. נסו שוב.",
+      code: "AUTH-301",
+    };
   }
   if (raw === "link") {
-    return "קישור ההתחברות לא תקין או שפג תוקפו. בקשו קישור חדש.";
+    return {
+      message: "קישור ההתחברות לא תקין או שפג תוקפו. בקשו קישור חדש.",
+      code: "AUTH-302",
+    };
   }
   if (raw === "rate_limit") {
-    return "הגעתם למגבלת שליחת מיילים זמנית. נסו שוב בעוד זמן קצר.";
+    return {
+      message: "הגעתם למגבלת שליחת מיילים זמנית. נסו שוב בעוד זמן קצר.",
+      code: "AUTH-303",
+    };
   }
 
-  return "לא הצלחנו להשלים את ההתחברות. נסו שוב.";
+  return {
+    message: "לא הצלחנו להשלים את ההתחברות. נסו שוב.",
+    code: "AUTH-300",
+  };
 }
 
-function mapSupabaseErrorToHebrew(
+function mapSupabaseSignInErrorToCoded(
   err: { status?: number; code?: string; message?: string } | null,
-): string {
-  if (!err) return "אירעה שגיאה. נסו שוב בעוד רגע.";
+): CodedError {
+  if (!err) {
+    return {
+      message: "אירעה שגיאה. נסו שוב בעוד רגע.",
+      code: "AUTH-100",
+    };
+  }
   const msg = (err.message || "").toLowerCase();
 
   if (err.status === 429 || err.code === "over_email_send_rate_limit") {
-    return "הגעתם למגבלת שליחת מיילים זמנית. נסו שוב בעוד זמן קצר.";
+    return {
+      message: "הגעתם למגבלת שליחת מיילים זמנית. נסו שוב בעוד זמן קצר.",
+      code: "AUTH-104",
+    };
   }
   if (
     err.code === "invalid_credentials" ||
     msg.includes("invalid login credentials")
   ) {
-    return "האימייל או הסיסמה שגויים.";
+    return {
+      message: "האימייל או הסיסמה שגויים.",
+      code: "AUTH-101",
+    };
   }
   if (msg.includes("email not confirmed")) {
-    return "החשבון נוצר, אבל צריך לאשר את האימייל לפני כניסה.";
-  }
-  if (msg.includes("password should be at least")) {
-    return "הסיסמה חלשה מדי. בחרו סיסמה חזקה יותר.";
-  }
-  if (msg.includes("user already registered")) {
-    return "כבר קיים חשבון עם האימייל הזה. נסו להתחבר.";
-  }
-  if (msg.includes("signup is disabled")) {
-    return "הרשמה חדשה אינה זמינה כרגע.";
+    return {
+      message: "החשבון נוצר, אבל צריך לאשר את האימייל לפני כניסה.",
+      code: "AUTH-102",
+    };
   }
 
-  return "לא הצלחנו להשלים את הפעולה. נסו שוב.";
+  return {
+    message: "לא הצלחנו להשלים את הכניסה. נסו שוב.",
+    code: "AUTH-103",
+  };
 }
 
-function mapRuntimeErrorToHebrew(err: unknown): string {
+function mapSupabaseSignUpErrorToCoded(
+  err: { status?: number; code?: string; message?: string } | null,
+): CodedError {
+  if (!err) {
+    return {
+      message: "ההרשמה נכשלה. נסו שוב.",
+      code: "REG-100",
+    };
+  }
+  const msg = (err.message || "").toLowerCase();
+
+  if (err.status === 429 || err.code === "over_email_send_rate_limit") {
+    return {
+      message: "הגעתם למגבלת שליחת מיילים זמנית. נסו שוב בעוד זמן קצר.",
+      code: "REG-104",
+    };
+  }
+  if (msg.includes("password should be at least")) {
+    return {
+      message: "הסיסמה חלשה מדי. בחרו סיסמה חזקה יותר.",
+      code: "REG-101",
+    };
+  }
+  if (msg.includes("user already registered")) {
+    return {
+      message: "כבר קיים חשבון עם האימייל הזה. נסו להתחבר.",
+      code: "REG-102",
+    };
+  }
+  if (msg.includes("signup is disabled")) {
+    return {
+      message: "הרשמה חדשה אינה זמינה כרגע.",
+      code: "REG-103",
+    };
+  }
+
+  return {
+    message: "ההרשמה נכשלה. נסו שוב בעוד רגע.",
+    code: "REG-105",
+  };
+}
+
+function mapRuntimeErrorToCoded(err: unknown): CodedError {
   const message = err instanceof Error ? err.message.toLowerCase() : "";
   if (message.includes("failed to fetch") || message.includes("network")) {
-    return "אין כרגע חיבור לשרת ההתחברות. בדקו אינטרנט והגדרות Supabase ונסו שוב.";
+    return {
+      message:
+        "אין כרגע חיבור לשרת ההתחברות. בדקו אינטרנט והגדרות Supabase ונסו שוב.",
+      code: "AUTH-201",
+    };
   }
-  return "אירעה שגיאה. נסו שוב בעוד רגע.";
+  return {
+    message: "אירעה שגיאה. נסו שוב בעוד רגע.",
+    code: "AUTH-200",
+  };
 }
 
 async function syncAppUserRecord(): Promise<void> {
@@ -92,7 +163,8 @@ export function SupabaseMagicLinkForm() {
   const [authMethod, setAuthMethod] = useState<AuthMethod>("magic");
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(mapAuthErrorToHebrew(authError));
+  const initialError = mapAuthErrorToCoded(authError);
+  const [error, setError] = useState<CodedError | null>(initialError);
   const [message, setMessage] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
 
@@ -101,6 +173,9 @@ export function SupabaseMagicLinkForm() {
       <AuthFullPageCard>
         <p className="text-center text-sm leading-relaxed text-zinc-300">
           ההתחברות לא זמינה כרגע. נסו שוב בעוד כמה דקות.
+          <span className="me-2 font-mono text-xs text-zinc-500">
+            (AUTH-001)
+          </span>
         </p>
       </AuthFullPageCard>
     );
@@ -112,7 +187,7 @@ export function SupabaseMagicLinkForm() {
     setMessage(null);
     const trimmed = email.trim();
     if (!trimmed) {
-      setError("נא להזין כתובת אימייל.");
+      setError({ message: "נא להזין כתובת אימייל.", code: "AUTH-110" });
       return;
     }
 
@@ -132,12 +207,12 @@ export function SupabaseMagicLinkForm() {
         },
       });
       if (signErr) {
-        setError(mapSupabaseErrorToHebrew(signErr));
+        setError(mapSupabaseSignInErrorToCoded(signErr));
         return;
       }
       setSent(true);
     } catch (err) {
-      setError(mapRuntimeErrorToHebrew(err));
+      setError(mapRuntimeErrorToCoded(err));
     } finally {
       setBusy(false);
     }
@@ -149,15 +224,18 @@ export function SupabaseMagicLinkForm() {
     setMessage(null);
     const trimmed = email.trim();
     if (!trimmed) {
-      setError("נא להזין כתובת אימייל.");
+      setError({ message: "נא להזין כתובת אימייל.", code: "AUTH-110" });
       return;
     }
     if (!password) {
-      setError("נא להזין סיסמה.");
+      setError({ message: "נא להזין סיסמה.", code: "AUTH-111" });
       return;
     }
     if (passwordMode === "signup" && password.length < 6) {
-      setError("הסיסמה חייבת לכלול לפחות 6 תווים.");
+      setError({
+        message: "הסיסמה חייבת לכלול לפחות 6 תווים.",
+        code: "REG-110",
+      });
       return;
     }
 
@@ -175,7 +253,7 @@ export function SupabaseMagicLinkForm() {
           password,
         });
         if (signInError) {
-          setError(mapSupabaseErrorToHebrew(signInError));
+          setError(mapSupabaseSignInErrorToCoded(signInError));
           return;
         }
         await syncAppUserRecord();
@@ -192,15 +270,17 @@ export function SupabaseMagicLinkForm() {
         },
       });
       if (signUpError) {
-        setError(mapSupabaseErrorToHebrew(signUpError));
+        setError(mapSupabaseSignUpErrorToCoded(signUpError));
         return;
       }
       await syncAppUserRecord();
-      setMessage("ההרשמה בוצעה. אם נדרש אימות מייל, נשלחה אליכם הודעה להשלמת הכניסה.");
+      setMessage(
+        "ההרשמה בוצעה. אם נדרש אימות מייל, נשלחה אליכם הודעה להשלמת הכניסה.",
+      );
       setPassword("");
       setPasswordMode("signin");
     } catch (err) {
-      setError(mapRuntimeErrorToHebrew(err));
+      setError(mapRuntimeErrorToCoded(err));
     } finally {
       setBusy(false);
     }
@@ -212,20 +292,15 @@ export function SupabaseMagicLinkForm() {
     setSent(false);
   }
 
-  const loginUrl =
-    nextPath === "/"
-      ? "/auth/login"
-      : `/auth/login?next=${encodeURIComponent(nextPath)}`;
-
   return (
     <AuthFullPageCard>
       <div className="mb-4 text-center">
-        <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-2xl shadow-lg shadow-violet-600/35">
+        <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-green-600 text-2xl shadow-lg shadow-emerald-600/35">
           {"\u{1F6E1}\uFE0F"}
         </div>
         <h1
           id={`${formId}-title`}
-          className="bg-gradient-to-l from-violet-200 via-fuchsia-200 to-violet-300 bg-clip-text text-xl font-extrabold text-transparent sm:text-2xl"
+          className="bg-gradient-to-l from-emerald-200 via-green-200 to-emerald-300 bg-clip-text text-xl font-extrabold text-transparent sm:text-2xl"
         >
           התחברות לחשבון
         </h1>
@@ -239,7 +314,7 @@ export function SupabaseMagicLinkForm() {
           type="button"
           className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
             authMethod === "magic"
-              ? "bg-violet-500/25 text-violet-100"
+              ? "bg-emerald-500/25 text-emerald-100"
               : "text-zinc-300 hover:bg-white/5"
           }`}
           onClick={() => {
@@ -254,7 +329,7 @@ export function SupabaseMagicLinkForm() {
           type="button"
           className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
             authMethod === "password"
-              ? "bg-violet-500/25 text-violet-100"
+              ? "bg-emerald-500/25 text-emerald-100"
               : "text-zinc-300 hover:bg-white/5"
           }`}
           onClick={() => {
@@ -295,7 +370,7 @@ export function SupabaseMagicLinkForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={busy}
-              className="w-full rounded-xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-100 outline-none ring-violet-500/30 transition placeholder:text-zinc-600 focus:border-violet-500/40 focus:ring-2 disabled:opacity-60"
+              className="w-full rounded-xl border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-100 outline-none ring-emerald-500/30 transition placeholder:text-zinc-600 focus:border-emerald-500/40 focus:ring-2 disabled:opacity-60"
               placeholder="name@example.com"
             />
           </div>
@@ -309,13 +384,15 @@ export function SupabaseMagicLinkForm() {
                 >
                   סיסמה
                 </label>
-                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/80 px-2 focus-within:border-violet-500/40 focus-within:ring-2 focus-within:ring-violet-500/30">
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-950/80 px-2 focus-within:border-emerald-500/40 focus-within:ring-2 focus-within:ring-emerald-500/30">
                   <input
                     id={`${formId}-password`}
                     name="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete={
-                      passwordMode === "signin" ? "current-password" : "new-password"
+                      passwordMode === "signin"
+                        ? "current-password"
+                        : "new-password"
                     }
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -338,7 +415,7 @@ export function SupabaseMagicLinkForm() {
                   type="button"
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     passwordMode === "signin"
-                      ? "bg-violet-500/25 text-violet-100"
+                      ? "bg-emerald-500/25 text-emerald-100"
                       : "text-zinc-300 hover:bg-white/5"
                   }`}
                   onClick={() => {
@@ -354,7 +431,7 @@ export function SupabaseMagicLinkForm() {
                   type="button"
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
                     passwordMode === "signup"
-                      ? "bg-violet-500/25 text-violet-100"
+                      ? "bg-emerald-500/25 text-emerald-100"
                       : "text-zinc-300 hover:bg-white/5"
                   }`}
                   onClick={() => {
@@ -378,14 +455,17 @@ export function SupabaseMagicLinkForm() {
 
           {error ? (
             <p className="text-center text-sm text-red-400" role="alert">
-              {error}
+              {error.message}
+              <span className="me-2 font-mono text-xs text-red-300/80">
+                ({error.code})
+              </span>
             </p>
           ) : null}
 
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-xl bg-gradient-to-l from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/25 transition hover:opacity-95 disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-l from-emerald-600 to-green-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition hover:opacity-95 disabled:opacity-50"
           >
             {authMethod === "magic"
               ? busy
@@ -401,7 +481,6 @@ export function SupabaseMagicLinkForm() {
           </button>
         </form>
       )}
-
     </AuthFullPageCard>
   );
 }

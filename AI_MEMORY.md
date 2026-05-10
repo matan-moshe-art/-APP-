@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-05 16:09:38 +03:00
+Last updated: 2026-05-10 16:04:00 +03:00
 
 ## Durable Preferences
 
@@ -18,6 +18,8 @@ Last updated: 2026-05-05 16:09:38 +03:00
 
 ## Recent Requests
 
+- 2026-05-10 16:04:00 +03:00: After professional app feedback, user requested major overhaul: rebrand from "official messages" analyzer to **phishing/scam detector** with green-only color scheme (no purple/violet); profile chip top-left; remove shield/brand and useless intro text; subscription status visible on home page (active/inactive in Hebrew); add real phishing example; replace "analyze again" button with auto-rendered follow-up textarea below results; simple smooth percentage progress bar (30 -> 90 -> 99 -> 100) instead of skeleton/step messages; standardized error codes (`AN-`, `AUTH-`, `REG-`, `PROF-`, `BILL-`) shown to users; new Hebrew-only `ERROR_CODES.md` reference for backend debugging; copy must explicitly say "phishing".
+- 2026-05-08 15:15:00 +03:00: User asked for profile avatar picker UX: panel anchored under header avatar; large preview on top; preset row below with horizontal scroll; slightly smaller thumbnails/panel.
 - 2026-05-05 16:09:38 +03:00: User requested pushing all currently updated code to GitHub so the newest version is saved remotely.
 - 2026-05-04 12:24:03 +03:00: User requested wiping old webhook information, registering only the new webhook endpoint, and switching webhook mode from test to production.
 - 2026-05-02 18:25:48 +03:00: User requested changing analyzer result card order to: meaning, urgency, suspicious, then action.
@@ -68,6 +70,8 @@ Last updated: 2026-05-05 16:09:38 +03:00
 
 ## Recent Outputs
 
+- 2026-05-10 16:04:00 +03:00: Phishing rebrand + green theme overhaul. `globals.css` palette swapped to green (`--accent: #16a34a`, mesh gradients, btn-primary `#15803d -> #16a34a -> #22c55e`). `src/app/page.tsx` rewritten: header now has `NavAuthLink` on left and subscription status pill on right (`מנוי פעיל` / `מנוי לא פעיל`); shield/brand removed; new H1 "מזהה פישינג בעברית. הגנה מפני סקאם בשניות" + subtitle about scam protection; FEATURES grid + irrelevant badge removed; new `ExampleAnalysisPreview` shows a realistic Hebrew Bank Leumi phishing SMS with all four cards filled in; loading is a single smooth `ProgressBar` (0->30 over 8s, 30->90 over 15s, 90->99 over 5s, 100 on done) replacing both `SkeletonCards` and `WaitingIndicator`; after results, a follow-up textarea + "בדוק את ההודעה" button auto-renders so users no longer need to scroll up or "reset" - new submission goes through the same `/api/analyze`. `NavAuthLink`, `SupabaseMagicLinkForm`, `AuthFullPageCard`, `auth/login/page.tsx`, `layout.tsx` all switched to emerald/green classes. Standardized error codes added: `AUTH-001/100-303`, `REG-100-110`, `PROF-401/501`, `BILL-101-501` returned in JSON `eventCode`+`message` and surfaced in user-facing Hebrew strings (analyze already had `AN-xxx`). New file `ERROR_CODES.md` at repo root: Hebrew-only reference table of every code, where it fires, and remediation, plus convention guidance for adding new codes.
+- 2026-05-08 15:15:00 +03:00: Reworked `NavAuthLink` profile menu: dropdown centers under avatar button; avatar card shows centered preview then scrollable preset strip (24px, LTR row) + URL; name/save below; tighter `w-72`/padding vs old `w-80` grid.
 - 2026-05-05 16:09:38 +03:00: Pushed latest local changes to GitHub `master` in `matan-moshe-art/-APP-` with commit `86b3a7b` (`fix(analyze): harden webhook parsing and response handling`).
 - 2026-05-04 12:24:03 +03:00: Cleared prior webhook debug artifacts, set local webhook config to production endpoint in `.env.local` (`ANALYZE_WEBHOOK_URL=https://cursor-test.app.n8n.cloud/webhook/b82ce861-9cb4-4f7b-ac31-1d3a9c26a732`), and removed explicit test-webhook 404 branch in `src/app/api/analyze/route.ts` so handling is production-oriented.
 - 2026-05-02 18:25:48 +03:00: Reordered analyzer result sections in `src/app/page.tsx` so cards now render as `meaning` -> `urgency` -> `suspicious` -> `action` (including matching stagger animation order).

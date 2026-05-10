@@ -14,7 +14,9 @@ export async function GET(request: Request) {
       : "/";
 
   if (providerError) {
-    return NextResponse.redirect(`${origin}/auth/login?error=link`);
+    return NextResponse.redirect(
+      `${origin}/auth/login?error=link&eventCode=AUTH-302`,
+    );
   }
 
   if (code) {
@@ -35,5 +37,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/login?error=session`);
+  return NextResponse.redirect(
+    `${origin}/auth/login?error=session&eventCode=AUTH-301`,
+  );
 }
