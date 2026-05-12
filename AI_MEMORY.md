@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-12 19:57:00 +03:00
+Last updated: 2026-05-12 21:05:00 +03:00
 
 ## Durable Preferences
 
@@ -20,6 +20,7 @@ Last updated: 2026-05-12 19:57:00 +03:00
 
 ## Recent Requests
 
+- 2026-05-12 21:05:00 +03:00: User asked to push all local work (summarize feature, timeouts, related updates) to GitHub `matan-moshe-art/-APP-` `master`.
 - 2026-05-12 19:57:00 +03:00: User reported n8n summarize webhook returns correct AI output but website doesn't display it. Debugged as **25-second timeout** causing the fetch to abort before n8n AI Agent completes; the inline "Respond to Webhook" response is lost and polling never resolves.
 - 2026-05-12 18:15:00 +03:00: User asked to rebrand email summarizer heading to **complex/unstructured message summarizer** (only the summarize section title, not the main page) and wire n8n webhook.
 - 2026-05-12 18:10:00 +03:00: User approved implementation plan for **Email Summarizer**: new page `/summarize` (work-email TL;DR) mirroring phishing home UI; four result cards `topic`, `urgency`, `actions`, `recommendations`; nav links between `/` and `/summarize` in header (sky pill, RTL far-right cluster) and footer; API `POST /api/summarize` + `callback` + `status/[id]` with `SM-xxx` codes; env `SUMMARIZE_WEBHOOK_URL` (optional header auth); Hebrew system prompt in `src/lib/summarize-prompt.ts`; separate in-memory pending store; n8n webhook not wired in `.env.local` yet (user has production path `f48fa117-346a-4881-a02a-c610151374fc`).
@@ -76,6 +77,7 @@ Last updated: 2026-05-12 19:57:00 +03:00
 
 ## Recent Outputs
 
+- 2026-05-12 21:05:00 +03:00: Pushed `master` to `origin` (`054d717..f7ebac3`): commit `f7ebac3` includes summarize routes/page/libs, analyze timeout + debug-log removal, `.env.example` / `ERROR_CODES.md` / home-nav-portal updates; intentionally omitted `.cursor/debug-604a7b.log` and did not commit `.next/` (gitignored).
 - 2026-05-12 19:57:00 +03:00: Fixed webhook timeout bug: increased `WEBHOOK_TIMEOUT_MS` from 25s to 120s in both `/api/summarize/route.ts` and `/api/analyze/route.ts` so n8n AI Agent has enough time to respond inline via "Respond to Webhook" node. Cleaned up all leftover debug logging (`fetch('http://127.0.0.1:...')` calls) from both routes and removed `src/lib/billing/debug-log.ts`. Build succeeds.
 - 2026-05-12 18:15:00 +03:00: Rebranded summarize feature from "סיכום אימיילים" to "סיכום הודעות מורכבות" across page heading, subtitle, placeholders, prompt, home page links; wired `SUMMARIZE_WEBHOOK_URL=https://cursor-test.app.n8n.cloud/webhook/f48fa117-346a-4881-a02a-c610151374fc` in `.env.local`; build succeeds.
 - 2026-05-12 18:10:00 +03:00: Shipped **email summarizer** feature: `src/lib/summarize-prompt.ts`, `src/lib/summarize-pending-store.ts`, `src/app/api/summarize/{route.ts,callback/route.ts,status/[id]/route.ts}`, `src/app/summarize/page.tsx`; `src/middleware.ts` public path for `/api/summarize/callback`; home `src/app/page.tsx` Link to `/summarize` in header + footer; `.env.example` documents `SUMMARIZE_WEBHOOK_*`; `ERROR_CODES.md` new `SM-` table. `npm run build` succeeds.
