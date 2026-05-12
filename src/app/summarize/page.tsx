@@ -12,10 +12,10 @@ import {
 import { useSearchParams } from "next/navigation";
 
 type Result = {
-  meaning: string;
+  topic: string;
   urgency: string;
-  action: string;
-  suspicious: string;
+  actions: string;
+  recommendations: string;
 };
 
 const SECTIONS: {
@@ -27,9 +27,9 @@ const SECTIONS: {
   stagger: string;
 }[] = [
   {
-    key: "meaning",
-    title: "פירוש פשוט",
-    icon: "\u{1F4A1}",
+    key: "topic",
+    title: "נושא ההודעה",
+    icon: "\u{1F4EC}",
     accent:
       "border-emerald-500/25 bg-gradient-to-bl from-emerald-950/50 to-zinc-950/70",
     bar: "bg-gradient-to-b from-emerald-400 to-green-600",
@@ -45,37 +45,41 @@ const SECTIONS: {
     stagger: "stagger-2",
   },
   {
-    key: "suspicious",
-    title: "סימני פישינג",
-    icon: "\u{1F50D}",
-    accent:
-      "border-amber-500/25 bg-gradient-to-bl from-amber-950/40 to-zinc-950/70",
-    bar: "bg-gradient-to-b from-amber-400 to-yellow-600",
-    stagger: "stagger-3",
-  },
-  {
-    key: "action",
-    title: "מה לעשות עכשיו",
+    key: "actions",
+    title: "מה צריך לעשות עכשיו",
     icon: "\u2705",
     accent:
       "border-green-500/25 bg-gradient-to-bl from-green-950/40 to-zinc-950/70",
     bar: "bg-gradient-to-b from-green-400 to-emerald-600",
+    stagger: "stagger-3",
+  },
+  {
+    key: "recommendations",
+    title: "המלצות וזהירות",
+    icon: "\u{1F9E0}",
+    accent:
+      "border-sky-500/25 bg-gradient-to-bl from-sky-950/40 to-zinc-950/70",
+    bar: "bg-gradient-to-b from-sky-400 to-cyan-600",
     stagger: "stagger-4",
   },
 ];
 
-const EXAMPLE_INPUT =
-  "בנק לאומי: זוהתה פעילות חריגה בחשבונך. נדרש אימות מיידי תוך שעה כדי למנוע חסימה: https://leumi-secure-verify.co/login";
+const EXAMPLE_INPUT = `היי צוות, כמה דברים,
+ראשית לגבי הפגישה של יום ראשון - דנה אמרה שהיא לא יכולה אז אולי להזיז ליום שני אבל רק אם גם עומר פנוי, תבדקו מולו. אם לא, נישאר ביום ראשון בלי דנה אבל אז צריך שמישהו יעדכן אותה אח"כ בכתב.
+חוץ מזה, הלקוח מחברת אלפא שלח מייל שהוא צריך עד יום חמישי הזה(!) את גרסה מעודכנת של המצגת עם התיקונים שדיברנו עליהם בשיחה האחרונה + הנתונים מ-Q3 שעדיין לא קיבלנו מהכספים. מישהו יכול לרדוף אחרי הכספים? אני חושב שזה יושב אצל טלי או שירה, לא בטוח.
+עוד דבר - צריך לסגור את הנושא של החוזה מול ספק הענן, יעל אמרה שיש בעיה עם הסעיף של ה-SLA ושהיא שלחה הערות ליועצת המשפטית אבל לא קיבלה תשובה כבר שבוע. זה חוסם את ההעלאה לפרודקשן כי בלי חוזה חתום אי אפשר להפעיל את ה-environment. אם לא נסגור את זה עד סוף השבוע הפרויקט מתעכב.
+אה וגם - מי שמטפל בגיוס למשרת ה-frontend, יש שני מועמדים שעברו מיון ראשוני וצריך לתאם להם ראיון טכני. נדמה לי שרון אמור לתאם, תזכירו לו.
+תודה`;
 
 const EXAMPLE_RESULT: Result = {
-  meaning:
-    "ההודעה מתחזה לבנק לאומי ומבקשת ממך ללחוץ על קישור כדי 'לאמת' את החשבון. זוהי הודעת פישינג שמטרתה לגנוב את שם המשתמש והסיסמה שלך לבנק.",
+  topic:
+    "הודעה פנימית לצוות עם ארבעה נושאים שונים שמעורבבים: תיאום פגישה (יום ראשון/שני), דדליין מול לקוח אלפא (מצגת + נתוני Q3 עד יום חמישי), חוזה ספק ענן שחוסם עלייה לפרודקשן, וגיוס למשרת frontend. השולח לא מפרט מי אחראי על מה ומערבב בקשות דחופות עם פחות דחופות.",
   urgency:
-    "אין דחיפות אמיתית. הלחץ של 'תוך שעה' הוא טריק מוכר של פישינג - גורם לפעול בלי לחשוב. הבנק האמיתי לעולם לא ייתן לך שעה ללחוץ על קישור.",
-  suspicious:
-    "כתובת הקישור (leumi-secure-verify.co) לא שייכת לבנק לאומי - הדומיין הרשמי הוא bankleumi.co.il. השולח לא מזוהה, אין פנייה אישית בשם, וההודעה מבקשת פעולה דחופה דרך לינק חיצוני - שלושה סימני פישינג קלאסיים.",
-  action:
-    "אל תלחץ על הקישור. אל תזין פרטים. מחק את ההודעה. אם יש חשש אמיתי - היכנס לאפליקציית הבנק ישירות (לא דרך הקישור) או התקשר למוקד הבנק במספר שמופיע בכרטיס שלך. דווח על ההודעה למוקד 105 של מערך הסייבר.",
+    "דחוף\n\nיש שני דדליינים קריטיים: מצגת ללקוח עד יום חמישי (ותלוי בנתונים שעוד לא התקבלו), וחוזה ספק ענן שחוסם את כל הפרויקט אם לא ייסגר עד סוף השבוע. שני הנושאים האחרים פחות דחופים אבל דורשים פעולה השבוע.",
+  actions:
+    "1. לבדוק מול עומר אם הוא פנוי ביום שני - אם כן, להזיז את הפגישה; אם לא, להשאיר ביום ראשון ולמנות מישהו שיעדכן את דנה בכתב.\n2. לפנות לטלי או שירה בכספים ולבקש את נתוני Q3 בדחיפות (דדליין: יום חמישי).\n3. לעדכן את המצגת ללקוח אלפא עם התיקונים מהשיחה האחרונה, ולשלב את הנתונים ברגע שמגיעים.\n4. לפנות ליועצת המשפטית בנוגע להערות יעל על סעיף ה-SLA בחוזה ספק הענן - זה חוסם פרודקשן.\n5. להזכיר לרון לתאם ראיונות טכניים לשני המועמדים למשרת ה-frontend.",
+  recommendations:
+    "כדאי לפצל את ההודעה הזו לארבע משימות נפרדות במערכת ניהול משימות (Jira, Monday, Notion וכד') כדי שדברים לא ייפלו. הנושא הכי קריטי הוא החוזה מול ספק הענן - זה חוסם את כל הצוות ולא רק את השולח. מומלץ לקבוע אחראי בשם לכל משימה במקום 'מישהו' גנרי.",
 };
 
 function Reveal({
@@ -116,10 +120,6 @@ function Reveal({
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
-/**
- * Smooth phased progress targeting the n8n webhook's typical ~25s runtime:
- * 0 -> 30 over ~8s, 30 -> 90 over ~15s, 90 -> 99 over ~5s, jump to 100 on done.
- */
 function ProgressBar({ done }: { done: boolean }) {
   const [progress, setProgress] = useState(0);
 
@@ -161,7 +161,7 @@ function ProgressBar({ done }: { done: boolean }) {
           />
         </div>
         <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="text-zinc-500">בודקים את ההודעה...</span>
+          <span className="text-zinc-500">מסכמים את ההודעה...</span>
           <span
             className="font-mono font-semibold text-emerald-300"
             role="status"
@@ -175,37 +175,34 @@ function ProgressBar({ done }: { done: boolean }) {
   );
 }
 
-function ExampleAnalysisPreview() {
+function ExampleSummarizePreview() {
   return (
     <div className="preview-orbit relative mx-auto w-full max-w-2xl">
       <div
-        className="pointer-events-none absolute -inset-8 rounded-3xl bg-emerald-600/15 blur-3xl"
+        className="pointer-events-none absolute -inset-8 rounded-3xl bg-sky-600/12 blur-3xl"
         aria-hidden
       />
-      <div className="glass-dark-strong relative overflow-hidden rounded-2xl border border-white/10 p-5 shadow-2xl shadow-emerald-950/40 sm:p-6">
+      <div className="glass-dark-strong relative overflow-hidden rounded-2xl border border-white/10 p-5 shadow-2xl shadow-sky-950/30 sm:p-6">
         <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-4">
           <div className="flex items-center gap-2">
             <span
-              className="size-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
+              className="size-2.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]"
               aria-hidden
             />
             <span className="text-xs font-medium text-zinc-400">
-              ניתוח לדוגמה
+              סיכום לדוגמה
             </span>
           </div>
-          <span className="rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-200">
-            פישינג זוהה
+          <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-200">
+            ארבעה חלקים
           </span>
         </div>
 
         <div className="mb-4 rounded-xl border border-zinc-700/60 bg-zinc-900/60 p-3 text-right">
           <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">
-            ההודעה שנותחה
+            ההודעה שסוכמה
           </div>
-          <p
-            dir="rtl"
-            className="text-sm leading-relaxed text-zinc-300"
-          >
+          <p dir="rtl" className="text-sm leading-relaxed text-zinc-300">
             {EXAMPLE_INPUT}
           </p>
         </div>
@@ -235,7 +232,7 @@ function ExampleAnalysisPreview() {
   );
 }
 
-export default function Home() {
+export default function SummarizePage() {
   const searchParams = useSearchParams();
   const justActivated = searchParams.get("activated") === "1";
 
@@ -286,12 +283,12 @@ export default function Home() {
           stopPolling();
           setLoading(false);
           setError("העיבוד לוקח יותר מדי זמן. נסו שנית.");
-          setErrorCode("AN-208");
+          setErrorCode("SM-208");
           return;
         }
 
         try {
-          const res = await fetch(`/api/analyze/status/${correlationId}`);
+          const res = await fetch(`/api/summarize/status/${correlationId}`);
           const data: unknown = await res.json().catch(() => null);
 
           if (
@@ -303,10 +300,10 @@ export default function Home() {
           ) {
             const r = (data as { result: Record<string, unknown> }).result;
             setResult({
-              meaning: String(r.meaning),
+              topic: String(r.topic),
               urgency: String(r.urgency),
-              action: String(r.action),
-              suspicious: String(r.suspicious),
+              actions: String(r.actions),
+              recommendations: String(r.recommendations),
             });
             setLoading(false);
             stopPolling();
@@ -325,7 +322,7 @@ export default function Home() {
 
   useEffect(() => {
     if (justActivated) {
-      window.history.replaceState({}, "", "/");
+      window.history.replaceState({}, "", "/summarize");
     }
   }, [justActivated]);
 
@@ -354,7 +351,7 @@ export default function Home() {
     };
   }, [justActivated]);
 
-  const submitAnalyze = useCallback(
+  const submitSummarize = useCallback(
     async (input: string, isFollowUp: boolean) => {
       const trimmed = input.trim();
       const setLocalValidation = isFollowUp
@@ -365,18 +362,18 @@ export default function Home() {
       setErrorCode(null);
 
       if (!trimmed) {
-        setLocalValidation("יש להדביק הודעה לפני הניתוח");
+        setLocalValidation("יש להדביק טקסט לפני הסיכום");
         if (!isFollowUp) resetOutputs();
         return;
       }
       if (trimmed.length < 10) {
-        setLocalValidation("ההודעה קצרה מדי לניתוח");
+        setLocalValidation("הטקסט קצר מדי לסיכום");
         if (!isFollowUp) resetOutputs();
         return;
       }
       if (trimmed.length > 5000) {
         setLocalValidation(
-          "ההודעה ארוכה מדי. נסו לקצר או להדביק את החלק העיקרי",
+          "הטקסט ארוך מדי. נסו לקצר או להדביק את החלק העיקרי",
         );
         if (!isFollowUp) resetOutputs();
         return;
@@ -384,13 +381,13 @@ export default function Home() {
 
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         setError("אין חיבור לאינטרנט. בדקו את החיבור ונסו שנית.");
-        setErrorCode("AN-001");
+        setErrorCode("SM-001");
         setShowResults(true);
         setResult(null);
         return;
       }
       if (!entitled) {
-        setLocalValidation("כדי לנתח הודעות צריך להפעיל מנוי במסך המנוי.");
+        setLocalValidation("כדי לסכם הודעות צריך להפעיל מנוי במסך המנוי.");
         setShowResults(false);
         return;
       }
@@ -403,7 +400,7 @@ export default function Home() {
       setPolling(false);
 
       try {
-        const res = await fetch("/api/analyze", {
+        const res = await fetch("/api/summarize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: trimmed }),
@@ -428,7 +425,7 @@ export default function Home() {
             }
           } else {
             setError("משהו השתבש. נסו שנית בעוד כמה שניות.");
-            setErrorCode("AN-500");
+            setErrorCode("SM-500");
           }
           return;
         }
@@ -439,7 +436,8 @@ export default function Home() {
           "accepted" in data &&
           (data as { accepted: unknown }).accepted === true &&
           "correlationId" in data &&
-          typeof (data as { correlationId: unknown }).correlationId === "string"
+          typeof (data as { correlationId: unknown }).correlationId ===
+            "string"
         ) {
           startPolling((data as { correlationId: string }).correlationId);
           return;
@@ -448,25 +446,25 @@ export default function Home() {
         if (
           data &&
           typeof data === "object" &&
-          "meaning" in data &&
+          "topic" in data &&
           "urgency" in data &&
-          "action" in data &&
-          "suspicious" in data
+          "actions" in data &&
+          "recommendations" in data
         ) {
           const d = data as Record<string, unknown>;
           setResult({
-            meaning: String(d.meaning),
+            topic: String(d.topic),
             urgency: String(d.urgency),
-            action: String(d.action),
-            suspicious: String(d.suspicious),
+            actions: String(d.actions),
+            recommendations: String(d.recommendations),
           });
         } else {
           setError("משהו השתבש. נסו שנית בעוד כמה שניות.");
-          setErrorCode("AN-501");
+          setErrorCode("SM-501");
         }
       } catch {
         setError("אין חיבור לאינטרנט. בדקו את החיבור ונסו שנית.");
-        setErrorCode("AN-002");
+        setErrorCode("SM-002");
       } finally {
         if (!pollRef.current) {
           setLoading(false);
@@ -476,22 +474,22 @@ export default function Home() {
     [entitled, resetOutputs, startPolling],
   );
 
-  const analyze = useCallback(() => submitAnalyze(text, false), [
-    submitAnalyze,
-    text,
-  ]);
+  const summarize = useCallback(
+    () => submitSummarize(text, false),
+    [submitSummarize, text],
+  );
 
   const submitFollowUp = useCallback(async () => {
     const trimmed = followUpText.trim();
     if (!trimmed) {
-      setFollowUpValidation("יש להדביק הודעה לפני הניתוח");
+      setFollowUpValidation("יש להדביק טקסט לפני הסיכום");
       return;
     }
     setText(trimmed);
     setFollowUpText("");
     setFollowUpValidation(null);
-    await submitAnalyze(trimmed, true);
-  }, [followUpText, submitAnalyze]);
+    await submitSummarize(trimmed, true);
+  }, [followUpText, submitSummarize]);
 
   return (
     <div className="flex min-h-full flex-col">
@@ -499,10 +497,10 @@ export default function Home() {
         <div className="flex w-full items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-10">
           <div className="flex items-center gap-3">
             <Link
-              href="/summarize"
+              href="/"
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-sky-500/35 bg-gradient-to-r from-sky-500/15 to-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-sky-100 shadow-md shadow-sky-950/20 transition hover:border-sky-400/55 hover:from-sky-500/25 hover:to-cyan-500/25 hover:text-white sm:px-4 sm:text-sm"
             >
-              סיכום הודעות מורכבות
+              מזהה פישינג
               <span aria-hidden className="text-sky-300">
                 {"\u2190"}
               </span>
@@ -542,25 +540,25 @@ export default function Home() {
         <section className="text-center">
           <Reveal>
             <h1 className="mx-auto max-w-3xl text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl md:text-5xl">
-              מזהה פישינג בעברית.{" "}
-              <span className="bg-gradient-to-l from-emerald-300 via-green-300 to-emerald-400 bg-clip-text text-transparent">
-                הגנה מפני סקאם בשניות
+              סיכום הודעות מורכבות בעברית.{" "}
+              <span className="bg-gradient-to-l from-sky-300 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                תבינו מה רוצים מכם בשניות
               </span>
             </h1>
           </Reveal>
           <Reveal className="mt-5">
             <p className="mx-auto max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-              הדביקו SMS, מייל או הודעה חשודה. אנחנו נבדוק אם מנסים לגנוב מכם
-              מידע, סיסמאות או כסף, ונגיד לכם בדיוק מה לעשות הלאה - כדי שתוכלו
-              לפעול בביטחון בלי לחשוש מסקאם.
+              הדביקו הודעה מורכבת, לא מובנית, או עם הרבה שלבים - מייל ארוך,
+              הודעת וואטסאפ, מסמך, הנחיות פנימיות. נפרק אותה לנושא, דחיפות,
+              רשימת משימות והמלצות חכמות.
             </p>
           </Reveal>
           <Reveal className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
-              href="#analyzer"
+              href="#summarizer"
               className="btn-primary inline-flex items-center justify-center rounded-full px-8 py-3.5 text-base font-semibold text-white"
             >
-              בדקו הודעה עכשיו
+              סכמו הודעה עכשיו
             </a>
           </Reveal>
         </section>
@@ -568,45 +566,45 @@ export default function Home() {
         <Reveal className="mt-14 sm:mt-20">
           <div className="mb-4 text-center">
             <h2 className="text-xl font-bold text-white sm:text-2xl">
-              ככה נראה ניתוח אמיתי
+              ככה נראה סיכום אמיתי
             </h2>
             <p className="mt-2 text-sm text-zinc-400">
-              דוגמה ל-SMS פישינג שזוהה ופורק לארבעה חלקים
+              דוגמה להודעה מורכבת שפורקה לארבעה חלקים
             </p>
           </div>
-          <ExampleAnalysisPreview />
+          <ExampleSummarizePreview />
         </Reveal>
 
         <section
-          id="analyzer"
+          id="summarizer"
           className="mt-20 scroll-mt-24 sm:mt-28"
-          aria-labelledby="analyzer-heading"
+          aria-labelledby="summarizer-heading"
         >
           <Reveal>
             <div className="text-right">
               <h2
-                id="analyzer-heading"
+                id="summarizer-heading"
                 className="text-2xl font-bold text-white sm:text-3xl"
               >
-                בדיקת פישינג
+                סיכום הודעות מורכבות
               </h2>
               <p className="mt-2 max-w-xl text-zinc-400">
-                הדביקו את ההודעה החשודה במלואה. הבדיקה מיועדת לעזור לכם להחליט -
-                לא תחליף לבדיקה ישירה מול הגוף הרשמי או דיווח למוקד 105.
+                הדביקו הודעה מורכבת, לא מובנית, או עם הרבה שלבים. הכלי מיועד
+                להבנה מהירה - לא תחליף לאימות מול השולח או למדיניות אבטחה בארגון.
               </p>
             </div>
           </Reveal>
 
           <Reveal className="mt-8">
             <div className="glass-dark-strong animate-slide-up rounded-2xl border border-white/10 p-4 shadow-xl shadow-black/30 sm:p-6">
-              <label htmlFor="message" className="sr-only">
-                הודעה חשודה
+              <label htmlFor="email-text" className="sr-only">
+                טקסט מייל לסיכום
               </label>
               <textarea
-                id="message"
+                id="email-text"
                 dir="rtl"
                 className="min-h-[200px] w-full resize-y rounded-xl border border-zinc-700/80 bg-zinc-900/50 p-4 text-base leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
-                placeholder="הדביקו כאן הודעה חשודה (SMS, מייל, וואטסאפ)..."
+                placeholder="הדביקו כאן הודעה מורכבת, מייל ארוך, או טקסט לא מובנה..."
                 value={text}
                 maxLength={5000}
                 disabled={loading}
@@ -633,7 +631,7 @@ export default function Home() {
               ) : null}
               {!entitlementLoading && !entitled ? (
                 <div className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-100">
-                  הבדיקה נעולה עד להפעלת מנוי.
+                  הסיכום נעול עד להפעלת מנוי.
                   <a
                     href="/billing"
                     className="me-2 font-semibold text-amber-200 underline decoration-amber-300/60 underline-offset-2"
@@ -646,7 +644,7 @@ export default function Home() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-start">
                 <button
                   type="button"
-                  onClick={analyze}
+                  onClick={summarize}
                   disabled={loading || !entitled || entitlementLoading}
                   className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
@@ -656,10 +654,10 @@ export default function Home() {
                         className="size-5 animate-spin rounded-full border-2 border-white border-t-transparent"
                         aria-hidden
                       />
-                      בודק...
+                      מסכמים...
                     </>
                   ) : (
-                    "בדוק את ההודעה"
+                    "סכם את ההודעה"
                   )}
                 </button>
               </div>
@@ -714,20 +712,20 @@ export default function Home() {
               <div className="glass-dark-strong animate-slide-up mt-8 rounded-2xl border border-emerald-500/20 p-4 shadow-xl shadow-black/30 sm:p-6">
                 <div className="mb-3 text-right">
                   <h3 className="text-lg font-bold text-white">
-                    יש לכם הודעה נוספת לבדוק?
+                    יש לכם הודעה נוספת לסכם?
                   </h3>
                   <p className="mt-1 text-sm text-zinc-400">
-                    הדביקו אותה כאן ולחצו על &quot;בדוק את ההודעה&quot;.
+                    הדביקו אותה כאן ולחצו על &quot;סכם את ההודעה&quot;.
                   </p>
                 </div>
-                <label htmlFor="follow-up-message" className="sr-only">
-                  הודעה חשודה נוספת
+                <label htmlFor="follow-up-email" className="sr-only">
+                  מייל נוסף לסיכום
                 </label>
                 <textarea
-                  id="follow-up-message"
+                  id="follow-up-email"
                   dir="rtl"
                   className="min-h-[140px] w-full resize-y rounded-xl border border-zinc-700/80 bg-zinc-900/50 p-4 text-base leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:border-emerald-500 focus:outline-none disabled:opacity-60"
-                  placeholder="הדביקו כאן הודעה חשודה נוספת..."
+                  placeholder="הדביקו כאן הודעה מורכבת נוספת..."
                   value={followUpText}
                   maxLength={5000}
                   disabled={loading}
@@ -754,7 +752,7 @@ export default function Home() {
                     disabled={loading || !entitled || entitlementLoading}
                     className="btn-primary inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-600/25 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
-                    בדוק את ההודעה
+                    סכם את ההודעה
                   </button>
                 </div>
               </div>
@@ -766,20 +764,20 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-zinc-500">
             <span className="inline-block size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(34,197,94,0.5)]" />
             <span>
-              מאובטח ופרטי. ההודעות שאתם מדביקים לא נשמרות לאחר הבדיקה.
+              מאובטח ופרטי. ההודעה שאתם מדביקים לא נשמרת לאחר הסיכום.
             </span>
           </div>
           <p className="mt-3 text-xs text-zinc-600">
-            הכלי עוזר לזהות פישינג, אבל אם יש ספק - תמיד פנו ישירות לבנק / לגוף
-            הרשמי או דווחו למוקד הסייבר 105.
+            הכלי עוזר להבין הודעות מורכבות מהר. אם זה נראה חשוד - אל תפעלו לפי
+            הבקשות, ודאו ישירות מול השולח בערוץ נוסף.
           </p>
           <div className="mt-8 pb-2">
             <Link
-              href="/summarize"
-              className="inline-flex items-center gap-2 rounded-full border border-sky-500/35 bg-sky-500/10 px-5 py-3 text-sm font-semibold text-sky-100 transition hover:border-sky-400/50 hover:bg-sky-500/20 hover:text-white"
+              href="/"
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-100 transition hover:border-emerald-400/50 hover:bg-emerald-500/20 hover:text-white"
             >
-              יש לכם הודעה מורכבת? עברו לסיכום הודעות
-              <span aria-hidden className="text-sky-300">
+              יש לכם הודעה חשודה? עברו למזהה הפישינג
+              <span aria-hidden className="text-emerald-300">
                 {"\u2190"}
               </span>
             </Link>

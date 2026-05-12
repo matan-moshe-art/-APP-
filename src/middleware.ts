@@ -12,6 +12,7 @@ function isSupabaseConfigured(): boolean {
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/auth")) return true;
   if (pathname === "/api/analyze/callback") return true;
+  if (pathname === "/api/summarize/callback") return true;
   if (pathname === "/api/billing/webhook") return true;
   return false;
 }

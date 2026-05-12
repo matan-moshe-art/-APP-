@@ -65,7 +65,9 @@ function normalizeAvatar(value: string): string {
   return "";
 }
 
-function NavAuthLinkInner() {
+type NavAuthVariant = "full" | "profile" | "actions";
+
+function NavAuthLinkInner({ variant = "full" }: { variant?: NavAuthVariant }) {
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -170,6 +172,26 @@ function NavAuthLinkInner() {
   }, [menuOpen]);
 
   if (loading) {
+    if (variant === "profile") {
+      return (
+        <span
+          className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-950/50 text-sm text-zinc-500"
+          aria-busy="true"
+        >
+          …
+        </span>
+      );
+    }
+    if (variant === "actions") {
+      return (
+        <span
+          className="inline-flex min-h-9 min-w-12 items-center justify-center rounded-full border border-white/10 bg-zinc-950/50 px-3 text-sm text-zinc-500"
+          aria-busy="true"
+        >
+          …
+        </span>
+      );
+    }
     return (
       <span
         className="inline-flex min-h-9 min-w-16 items-center justify-center rounded-full border border-white/10 bg-zinc-950/50 px-4 text-sm text-zinc-500"
@@ -181,14 +203,242 @@ function NavAuthLinkInner() {
   }
 
   if (user) {
+    if (variant === "profile") {
+      return (
+        <div ref={rootRef} className="relative flex items-center gap-3">
+          <div className="relative flex-shrink-0">
+            <button
+              type="button"
+              className="rounded-full border-2 border-emerald-500/40 p-0.5 transition hover:border-emerald-400/70"
+              onClick={() => {
+                setDraftName(displayName);
+                setDraftAvatarUrl(avatarUrl);
+                setSaveMessage(null);
+                setMenuOpen((prev) => !prev);
+              }}
+              aria-label="פתח הגדרות פרופיל"
+              aria-expanded={menuOpen}
+            >
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="rounded-full object-cover"
+                  style={{ width: 32, height: 32 }}
+                />
+              ) : (
+                <span
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-700/70 text-sm font-semibold text-white"
+                  style={{ width: 32, height: 32 }}
+                >
+                  {initials}
+                </span>
+              )}
+            </button>
+
+            {menuOpen ? (
+              <div
+                className="absolute left-1/2 top-full z-50 mt-2 w-[17.5rem] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 rounded-2xl border border-white/10 bg-zinc-950/95 p-3 shadow-2xl shadow-black/40 backdrop-blur sm:w-72"
+                role="dialog"
+                aria-label="הגדרות פרופיל"
+              >
+                <div className="mb-3 rounded-lg border border-white/5 bg-zinc-900/50 p-3">
+                  <label className="mb-2 block text-center text-xs font-medium text-zinc-400">
+                    תמונת פרופיל
+                  </label>
+                  <div className="mb-3 flex justify-center">
+                    <div className="rounded-full border-2 border-emerald-500/40 p-0.5">
+                      {draftAvatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={draftAvatarUrl}
+                          alt=""
+                          className="rounded-full object-cover"
+                          style={{ width: 44, height: 44 }}
+                        />
+                      ) : (
+                        <span
+                          className="inline-flex items-center justify-center rounded-full bg-emerald-700/70 text-base font-semibold text-white"
+                          style={{ width: 44, height: 44 }}
+                        >
+                          {initials}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mb-1.5 text-center text-[10px] text-zinc-500">בחירת אווטר</p>
+                  <div
+                    className="-mx-0.5 flex flex-nowrap gap-1.5 overflow-x-auto overflow-y-hidden px-0.5 py-1 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/25"
+                    dir="ltr"
+                  >
+                    {PRESET_AVATARS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        className={`shrink-0 rounded-full border p-0.5 transition ${
+                          draftAvatarUrl === preset
+                            ? "border-emerald-400 ring-2 ring-emerald-500/30"
+                            : "border-white/10 hover:border-white/35"
+                        }`}
+                        onClick={() => setDraftAvatarUrl(preset)}
+                        aria-label="בחירת אווטר"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={preset}
+                          alt=""
+                          className="rounded-full object-cover"
+                          style={{ width: 24, height: 24, minWidth: 24, minHeight: 24 }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <label className="mb-1 mt-2 block text-[10px] text-zinc-500">או קישור חיצוני לתמונה</label>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="url"
+                      value={draftAvatarUrl}
+                      onChange={(e) => setDraftAvatarUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="min-w-0 flex-1 rounded-lg border border-white/10 bg-zinc-800/80 px-2 py-1.5 text-[11px] text-zinc-100 outline-none focus:border-emerald-500/50"
+                    />
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-lg border border-white/15 px-2 py-1.5 text-[10px] text-zinc-400 transition hover:border-white/25 hover:text-zinc-300"
+                      onClick={() => setDraftAvatarUrl("")}
+                    >
+                      נקה
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-3 rounded-lg border border-white/5 bg-zinc-900/50 p-3">
+                  <label className="mb-2 block text-xs font-medium text-zinc-400">
+                    איך לקרוא לך באתר?
+                  </label>
+                  <input
+                    type="text"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    placeholder="לדוגמה: מתן"
+                    className="w-full rounded-lg border border-white/10 bg-zinc-800/80 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-500/50"
+                  />
+                  <p className="mt-1.5 text-[10px] text-zinc-500">
+                    השם שתרשום כאן יופיע בכל מקום באתר
+                  </p>
+                </div>
+
+                {saveMessage ? (
+                  <div className="mb-3 rounded-lg border border-teal-500/30 bg-teal-500/10 px-3 py-2">
+                    <p className="text-xs text-teal-300">{saveMessage}</p>
+                  </div>
+                ) : null}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={savingProfile}
+                    className="btn-primary flex-1 rounded-full px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                    onClick={async () => {
+                      setSavingProfile(true);
+                      setSaveMessage(null);
+                      const supabase = createClient();
+                      const nextName = draftName.trim();
+                      const nextAvatar = normalizeAvatar(draftAvatarUrl);
+                      const { error } = await supabase.auth.updateUser({
+                        data: {
+                          full_name: nextName || null,
+                          name: nextName || null,
+                          avatar_url: nextAvatar || null,
+                        },
+                      });
+                      if (error) {
+                        setSaveMessage("לא הצלחנו לשמור כרגע. נסו שוב.");
+                        setSavingProfile(false);
+                        return;
+                      }
+                      const visibleName = nextName || "הפרופיל שלי";
+                      setDisplayName(visibleName);
+                      setAvatarUrl(nextAvatar);
+                      setDraftName(visibleName);
+                      setDraftAvatarUrl(nextAvatar);
+                      setUser((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              user_metadata: {
+                                ...(prev.user_metadata ?? {}),
+                                full_name: visibleName,
+                                name: visibleName,
+                                avatar_url: nextAvatar || null,
+                              },
+                            }
+                          : prev,
+                      );
+                      try {
+                        await fetch("/api/auth/sync", { method: "POST" });
+                      } catch {
+                        // non-blocking
+                      }
+                      setSaveMessage("הפרופיל נשמר בהצלחה!");
+                      setSavingProfile(false);
+                    }}
+                  >
+                    {savingProfile ? "שומרים..." : "שמור שינויים"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-white/15 px-3 py-2 text-xs text-zinc-300 transition hover:border-white/25"
+                    onClick={() => {
+                      setDraftName(displayName);
+                      setDraftAvatarUrl(avatarUrl);
+                      setSaveMessage(null);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    סגור
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <span className="max-w-[120px] truncate text-sm font-semibold text-zinc-100">
+            {displayName}
+          </span>
+        </div>
+      );
+    }
+
+    if (variant === "actions") {
+      return (
+        <div className="flex items-center gap-3">
+          <span className="max-w-[180px] truncate text-xs text-zinc-400" dir="ltr">
+            {user.email?.trim() || ""}
+          </span>
+          <button
+            type="button"
+            className="hidden rounded-full border border-white/15 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-red-400/40 hover:text-red-300 sm:inline-flex"
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              router.replace("/auth/login");
+              router.refresh();
+            }}
+          >
+            יציאה
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div ref={rootRef} className="relative flex items-center gap-4">
-        {/* Email - Far Right */}
         <span className="max-w-[180px] truncate text-xs text-zinc-400" dir="ltr">
           {user.email?.trim() || ""}
         </span>
 
-        {/* Avatar - Next to Email (menu anchors under this control) */}
         <div className="relative flex-shrink-0">
           <button
             type="button"
@@ -226,7 +476,6 @@ function NavAuthLinkInner() {
               role="dialog"
               aria-label="הגדרות פרופיל"
             >
-              {/* Avatar preview + presets (picker sits below the same picture users see in the header) */}
               <div className="mb-3 rounded-lg border border-white/5 bg-zinc-900/50 p-3">
                 <label className="mb-2 block text-center text-xs font-medium text-zinc-400">
                   תמונת פרופיל
@@ -297,7 +546,6 @@ function NavAuthLinkInner() {
                 </div>
               </div>
 
-              {/* Profile Name Input Section */}
               <div className="mb-3 rounded-lg border border-white/5 bg-zinc-900/50 p-3">
                 <label className="mb-2 block text-xs font-medium text-zinc-400">
                   איך לקרוא לך באתר?
@@ -389,12 +637,10 @@ function NavAuthLinkInner() {
           ) : null}
         </div>
 
-        {/* Display Name - Next to Avatar */}
         <span className="max-w-[120px] truncate text-sm font-semibold text-zinc-100">
           {displayName}
         </span>
 
-        {/* Logout Button - Visible in header */}
         <button
           type="button"
           className="hidden rounded-full border border-white/15 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-red-400/40 hover:text-red-300 sm:inline-flex"
@@ -411,6 +657,8 @@ function NavAuthLinkInner() {
     );
   }
 
+  if (variant === "profile") return null;
+
   return (
     <Link
       href="/auth/login"
@@ -422,7 +670,7 @@ function NavAuthLinkInner() {
 }
 
 /** Login / logout in the marketing header (Supabase Auth). */
-export function NavAuthLink() {
+export function NavAuthLink({ variant }: { variant?: NavAuthVariant } = {}) {
   if (!isSupabaseClientEnvConfigured()) return null;
-  return <NavAuthLinkInner />;
+  return <NavAuthLinkInner variant={variant} />;
 }

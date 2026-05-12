@@ -1,13 +1,12 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { ANALYZE_SYSTEM_PROMPT } from "@/lib/analyze-prompt";
-import { getPrisma } from "@/lib/db";
+import { SUMMARIZE_SYSTEM_PROMPT } from "@/lib/summarize-prompt";
 import {
-  markPending,
-  completeAnalysis,
-  type AnalysisResult,
-} from "@/lib/pending-store";
+  markSummarizePending,
+  completeSummarize,
+  type SummarizeResult,
+} from "@/lib/summarize-pending-store";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { userHasActiveSubscription } from "@/lib/billing/entitlement";
 
@@ -22,7 +21,7 @@ function withEventCode(code: number): {
   eventCode: string;
   message: string;
 } {
-  const eventCode = `AN-${code}`;
+  const eventCode = `SM-${code}`;
   return {
     eventCode,
     message: `${USER_ERROR_PREFIX} קוד אירוע: ${eventCode}`,
@@ -49,12 +48,14 @@ function resolveWebhookUrl(
 
 function buildCallbackUrl(request: Request): string {
   const url = new URL(request.url);
-  return `${url.origin}/api/analyze/callback`;
+  return `${url.origin}/api/summarize/callback`;
 }
 
 function buildWebhookAuthHeader(): { name: string; value: string } | null {
-  const name = process.env.ANALYZE_WEBHOOK_AUTH_HEADER_NAME?.trim() ?? "";
-  const value = process.env.ANALYZE_WEBHOOK_AUTH_HEADER_VALUE?.trim() ?? "";
+  const name =
+    process.env.SUMMARIZE_WEBHOOK_AUTH_HEADER_NAME?.trim() ?? "";
+  const value =
+    process.env.SUMMARIZE_WEBHOOK_AUTH_HEADER_VALUE?.trim() ?? "";
   if (!name || !value) return null;
   return { name, value };
 }
@@ -63,16 +64,6 @@ async function sendToWebhook(
   url: string,
   payload: { text: string; correlationId: string; callbackUrl: string },
 ): Promise<unknown> {
-  // Mirror the payload onto query params so workflows that read either
-  // `$json.body.*` or `$json.query.*` keep working without changes.
-  const webhookUrl = new URL(url);
-  webhookUrl.searchParams.set("text", payload.text);
-  webhookUrl.searchParams.set("Text", payload.text);
-  webhookUrl.searchParams.set("body", payload.text);
-  webhookUrl.searchParams.set("message", payload.text);
-  webhookUrl.searchParams.set("correlationId", payload.correlationId);
-  webhookUrl.searchParams.set("callbackUrl", payload.callbackUrl);
-
   const headers: Record<string, string> = {
     Accept: "application/json, text/plain, */*",
     "Content-Type": "application/json",
@@ -82,14 +73,11 @@ async function sendToWebhook(
     headers[authHeader.name] = authHeader.value;
   }
 
-  const res = await fetch(webhookUrl, {
+  const res = await fetch(url, {
     method: "POST",
     headers,
     body: JSON.stringify({
       text: payload.text,
-      Text: payload.text,
-      body: payload.text,
-      message: payload.text,
       correlationId: payload.correlationId,
       callbackUrl: payload.callbackUrl,
     }),
@@ -109,34 +97,29 @@ async function sendToWebhook(
   }
 }
 
-type AnalyzeBody = {
+type SummarizeBody = {
   text?: unknown;
 };
 
-function isAnalyzeResult(r: Record<string, unknown>): r is {
-  meaning: string;
+function isSummarizeResult(r: Record<string, unknown>): r is {
+  topic: string;
   urgency: string;
-  action: string;
-  suspicious: string;
+  actions: string;
+  recommendations: string;
 } {
   return (
-    typeof r.meaning === "string" &&
-    r.meaning.trim().length > 0 &&
+    typeof r.topic === "string" &&
+    r.topic.trim().length > 0 &&
     typeof r.urgency === "string" &&
     r.urgency.trim().length > 0 &&
-    typeof r.action === "string" &&
-    r.action.trim().length > 0 &&
-    typeof r.suspicious === "string" &&
-    r.suspicious.trim().length > 0
+    typeof r.actions === "string" &&
+    r.actions.trim().length > 0 &&
+    typeof r.recommendations === "string" &&
+    r.recommendations.trim().length > 0
   );
 }
 
-/**
- * n8n may return the result in various shapes: as a flat object with the
- * four fields, nested under an `output` key (AI Agent node), or wrapped
- * inside a stringified JSON value. Try all common shapes.
- */
-function extractAnalysisResult(raw: unknown): AnalysisResult | null {
+function extractSummarizeResult(raw: unknown): SummarizeResult | null {
   const queue: unknown[] = [raw];
   const visited = new Set<unknown>();
 
@@ -169,16 +152,23 @@ function extractAnalysisResult(raw: unknown): AnalysisResult | null {
     if (typeof current !== "object") continue;
     const obj = current as Record<string, unknown>;
 
-    if (isAnalyzeResult(obj)) {
+    if (isSummarizeResult(obj)) {
       return {
-        meaning: obj.meaning.trim(),
+        topic: obj.topic.trim(),
         urgency: obj.urgency.trim(),
-        action: obj.action.trim(),
-        suspicious: obj.suspicious.trim(),
+        actions: obj.actions.trim(),
+        recommendations: obj.recommendations.trim(),
       };
     }
 
-    queue.push(obj.output, obj.result, obj.data, obj.json, obj.body, obj.response);
+    queue.push(
+      obj.output,
+      obj.result,
+      obj.data,
+      obj.json,
+      obj.body,
+      obj.response,
+    );
     for (const value of Object.values(obj)) queue.push(value);
   }
 
@@ -198,13 +188,13 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "subscription_required",
-        message: "כדי לקבל ניתוח צריך מנוי פעיל. אפשר להפעיל במסך המנוי.",
+        message: "כדי לקבל סיכום צריך מנוי פעיל. אפשר להפעיל במסך המנוי.",
       },
       { status: 402 },
     );
   }
 
-  const webhookUrlRaw = process.env.ANALYZE_WEBHOOK_URL?.trim() ?? "";
+  const webhookUrlRaw = process.env.SUMMARIZE_WEBHOOK_URL?.trim() ?? "";
   const webhookResolved = webhookUrlRaw
     ? resolveWebhookUrl(webhookUrlRaw)
     : null;
@@ -212,7 +202,7 @@ export async function POST(request: Request) {
   const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
   if (!webhookUrl && !hasOpenAI) {
     if (webhookUrlRaw && webhookResolved && !webhookResolved.ok) {
-      console.error("ANALYZE_WEBHOOK_URL is not a valid http(s) URL");
+      console.error("SUMMARIZE_WEBHOOK_URL is not a valid http(s) URL");
       return NextResponse.json(
         {
           error: "webhook_config",
@@ -221,7 +211,7 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
-    console.error("Set ANALYZE_WEBHOOK_URL and/or OPENAI_API_KEY");
+    console.error("Set SUMMARIZE_WEBHOOK_URL and/or OPENAI_API_KEY");
     return NextResponse.json(
       {
         error: "server_config",
@@ -240,7 +230,7 @@ export async function POST(request: Request) {
 
   const text =
     typeof body === "object" && body !== null && "text" in body
-      ? String((body as AnalyzeBody).text ?? "")
+      ? String((body as SummarizeBody).text ?? "")
       : "";
 
   const trimmed = text.trim();
@@ -249,7 +239,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "empty",
-        message: "יש להדביק הודעה לפני הניתוח",
+        message: "יש להדביק טקסט לפני הסיכום",
       },
       { status: 400 },
     );
@@ -258,7 +248,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "too_short",
-        message: "ההודעה קצרה מדי לניתוח",
+        message: "הטקסט קצר מדי לסיכום",
       },
       { status: 400 },
     );
@@ -268,7 +258,7 @@ export async function POST(request: Request) {
       {
         error: "too_long",
         message:
-          "ההודעה ארוכה מדי. נסו לקצר או להדביק את החלק העיקרי",
+          "הטקסט ארוך מדי. נסו לקצר או להדביק את החלק העיקרי",
       },
       { status: 400 },
     );
@@ -279,10 +269,10 @@ export async function POST(request: Request) {
   if (webhookUrl) {
     const callbackUrl =
       process.env.CALLBACK_BASE_URL
-        ? `${process.env.CALLBACK_BASE_URL.replace(/\/+$/, "")}/api/analyze/callback`
+        ? `${process.env.CALLBACK_BASE_URL.replace(/\/+$/, "")}/api/summarize/callback`
         : buildCallbackUrl(request);
 
-    markPending(correlationId);
+    markSummarizePending(correlationId);
 
     let webhookResponse: unknown = null;
     try {
@@ -292,10 +282,9 @@ export async function POST(request: Request) {
         callbackUrl,
       });
     } catch (err: unknown) {
-      console.error("Webhook error:", err);
+      console.error("Summarize webhook error:", err);
       const errMsg = err instanceof Error ? err.message : String(err);
       let errorCode = 201;
-      let eventPayload = withEventCode(errorCode);
       const isTimeoutError =
         errMsg.includes("timed out") ||
         errMsg.includes("TimeoutError") ||
@@ -309,28 +298,23 @@ export async function POST(request: Request) {
           { status: 202 },
         );
       }
-      if (errMsg.includes("HTTP 401") || errMsg.includes("HTTP 403")) errorCode = 202;
+      if (errMsg.includes("HTTP 401") || errMsg.includes("HTTP 403"))
+        errorCode = 202;
       else if (errMsg.includes("HTTP 404")) errorCode = 205;
-      else if (errMsg.includes("ENOTFOUND") || errMsg.includes("ECONNREFUSED")) errorCode = 204;
-      eventPayload = withEventCode(errorCode);
+      else if (errMsg.includes("ENOTFOUND") || errMsg.includes("ECONNREFUSED"))
+        errorCode = 204;
       return NextResponse.json(
-        { error: "delivery_failed", ...eventPayload },
+        { error: "delivery_failed", ...withEventCode(errorCode) },
         { status: 502 },
       );
     }
 
-    // n8n's "Respond to Webhook" returns the result inline in the HTTP
-    // response. Extract it and store it so the frontend polling picks it up
-    // immediately (or even return it directly).
-    const inlineResult = extractAnalysisResult(webhookResponse);
+    const inlineResult = extractSummarizeResult(webhookResponse);
     if (inlineResult) {
-      completeAnalysis(correlationId, inlineResult);
+      completeSummarize(correlationId, inlineResult);
       return NextResponse.json(inlineResult);
     }
 
-    // The webhook call succeeded but returned a shape we cannot parse and
-    // there is no local OpenAI fallback; returning 202 would cause a long
-    // waiting state with no final result.
     if (!hasOpenAI) {
       return NextResponse.json(
         {
@@ -352,17 +336,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const started = Date.now();
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
   try {
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: [
-        { role: "system", content: ANALYZE_SYSTEM_PROMPT },
+        { role: "system", content: SUMMARIZE_SYSTEM_PROMPT },
         {
           role: "user",
-          content: `נתח את ההודעה הבאה:\n\n${trimmed}`,
+          content: `סכם את ההודעה הבאה:\n\n${trimmed}`,
         },
       ],
       response_format: { type: "json_object" },
@@ -391,7 +374,7 @@ export async function POST(request: Request) {
       typeof parsed !== "object" ||
       parsed === null ||
       Array.isArray(parsed) ||
-      !isAnalyzeResult(parsed as Record<string, unknown>)
+      !isSummarizeResult(parsed as Record<string, unknown>)
     ) {
       return NextResponse.json(
         { error: "ai_shape", ...withEventCode(303) },
@@ -400,36 +383,15 @@ export async function POST(request: Request) {
     }
 
     const result = {
-      meaning: (parsed as { meaning: string }).meaning.trim(),
+      topic: (parsed as { topic: string }).topic.trim(),
       urgency: (parsed as { urgency: string }).urgency.trim(),
-      action: (parsed as { action: string }).action.trim(),
-      suspicious: (parsed as { suspicious: string }).suspicious.trim(),
+      actions: (parsed as { actions: string }).actions.trim(),
+      recommendations: (parsed as { recommendations: string }).recommendations.trim(),
     };
-
-    const durationMs = Date.now() - started;
-
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.analysis.create({
-          data: {
-            inputText: trimmed,
-            resultMeaning: result.meaning,
-            resultUrgency: result.urgency,
-            resultAction: result.action,
-            resultSuspicious: result.suspicious,
-            modelUsed: MODEL,
-            durationMs,
-          },
-        });
-      } catch (dbErr) {
-        console.error("Failed to save analysis:", dbErr);
-      }
-    }
 
     return NextResponse.json(result);
   } catch (err: unknown) {
-    console.error("OpenAI error:", err);
+    console.error("OpenAI summarize error:", err);
     return NextResponse.json(
       { error: "upstream", ...withEventCode(304) },
       { status: 502 },

@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
 import { getBillingProvider } from "@/lib/billing/config";
 import { getAuthenticatedUser } from "@/lib/billing/auth";
-import { debugLog } from "@/lib/billing/debug-log";
 
 export async function POST() {
-  // #region agent log
-  debugLog({
-    runId: "initial-debug-1",
-    hypothesisId: "H3",
-    location: "src/app/api/billing/portal/route.ts:POST:start",
-    message: "Portal route invoked",
-    data: {
-      provider: getBillingProvider(),
-      hasPortalUrl: Boolean(process.env.LEMONSQUEEZY_CUSTOMER_PORTAL_URL),
-    },
-  });
-  // #endregion
-
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json(

@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-10 18:30:00 +03:00
+Last updated: 2026-05-12 19:57:00 +03:00
 
 ## Durable Preferences
 
@@ -12,12 +12,17 @@ Last updated: 2026-05-10 18:30:00 +03:00
 
 ## Durable Context
 
+- 2026-05-12 19:25:00 +03:00: Starting a second `next dev` while one is running exits **code 1** with “Another next dev server is already running” (same project dir); stop the existing PID or use one terminal session only.
+- 2026-05-12 19:05:00 +03:00: On this Windows machine Turbopack dev cache under `.next/dev/cache/turbopack` repeatedly breaks (`Persisting failed` / missing `.sst`, os error 3). Default `npm run dev` uses **`next dev --webpack`**; use `npm run dev:turbo` only if Turbopack is needed and the cache is healthy.
 - 2026-04-13 08:26:53 +03:00: The user wants a persistent shared memory for Cursor agents in this workspace.
 - 2026-04-13 08:26:53 +03:00: `AGENTS.md` and `.cursor/rules/agent-memory.mdc` were configured so agents are instructed to always read and maintain this file.
 - 2026-04-13 08:27:44 +03:00: The memory file was expanded to track recent user requests and recent agent outputs explicitly.
 
 ## Recent Requests
 
+- 2026-05-12 19:57:00 +03:00: User reported n8n summarize webhook returns correct AI output but website doesn't display it. Debugged as **25-second timeout** causing the fetch to abort before n8n AI Agent completes; the inline "Respond to Webhook" response is lost and polling never resolves.
+- 2026-05-12 18:15:00 +03:00: User asked to rebrand email summarizer heading to **complex/unstructured message summarizer** (only the summarize section title, not the main page) and wire n8n webhook.
+- 2026-05-12 18:10:00 +03:00: User approved implementation plan for **Email Summarizer**: new page `/summarize` (work-email TL;DR) mirroring phishing home UI; four result cards `topic`, `urgency`, `actions`, `recommendations`; nav links between `/` and `/summarize` in header (sky pill, RTL far-right cluster) and footer; API `POST /api/summarize` + `callback` + `status/[id]` with `SM-xxx` codes; env `SUMMARIZE_WEBHOOK_URL` (optional header auth); Hebrew system prompt in `src/lib/summarize-prompt.ts`; separate in-memory pending store; n8n webhook not wired in `.env.local` yet (user has production path `f48fa117-346a-4881-a02a-c610151374fc`).
 - 2026-05-10 18:30:00 +03:00: User asked to push all local changes to GitHub repo `https://github.com/matan-moshe-art/-APP-`.
 - 2026-05-10 16:04:00 +03:00: After professional app feedback, user requested major overhaul: rebrand from "official messages" analyzer to **phishing/scam detector** with green-only color scheme (no purple/violet); profile chip top-left; remove shield/brand and useless intro text; subscription status visible on home page (active/inactive in Hebrew); add real phishing example; replace "analyze again" button with auto-rendered follow-up textarea below results; simple smooth percentage progress bar (30 -> 90 -> 99 -> 100) instead of skeleton/step messages; standardized error codes (`AN-`, `AUTH-`, `REG-`, `PROF-`, `BILL-`) shown to users; new Hebrew-only `ERROR_CODES.md` reference for backend debugging; copy must explicitly say "phishing".
 - 2026-05-08 15:15:00 +03:00: User asked for profile avatar picker UX: panel anchored under header avatar; large preview on top; preset row below with horizontal scroll; slightly smaller thumbnails/panel.
@@ -71,6 +76,9 @@ Last updated: 2026-05-10 18:30:00 +03:00
 
 ## Recent Outputs
 
+- 2026-05-12 19:57:00 +03:00: Fixed webhook timeout bug: increased `WEBHOOK_TIMEOUT_MS` from 25s to 120s in both `/api/summarize/route.ts` and `/api/analyze/route.ts` so n8n AI Agent has enough time to respond inline via "Respond to Webhook" node. Cleaned up all leftover debug logging (`fetch('http://127.0.0.1:...')` calls) from both routes and removed `src/lib/billing/debug-log.ts`. Build succeeds.
+- 2026-05-12 18:15:00 +03:00: Rebranded summarize feature from "סיכום אימיילים" to "סיכום הודעות מורכבות" across page heading, subtitle, placeholders, prompt, home page links; wired `SUMMARIZE_WEBHOOK_URL=https://cursor-test.app.n8n.cloud/webhook/f48fa117-346a-4881-a02a-c610151374fc` in `.env.local`; build succeeds.
+- 2026-05-12 18:10:00 +03:00: Shipped **email summarizer** feature: `src/lib/summarize-prompt.ts`, `src/lib/summarize-pending-store.ts`, `src/app/api/summarize/{route.ts,callback/route.ts,status/[id]/route.ts}`, `src/app/summarize/page.tsx`; `src/middleware.ts` public path for `/api/summarize/callback`; home `src/app/page.tsx` Link to `/summarize` in header + footer; `.env.example` documents `SUMMARIZE_WEBHOOK_*`; `ERROR_CODES.md` new `SM-` table. `npm run build` succeeds.
 - 2026-05-10 18:30:00 +03:00: Verified `origin` is `https://github.com/matan-moshe-art/-APP-.git` on branch `master`; working tree clean; `git fetch` + `git push origin master` reported **Everything up-to-date** (latest local commit `c287830` already on `origin/master`).
 - 2026-05-10 16:04:00 +03:00: Phishing rebrand + green theme overhaul. `globals.css` palette swapped to green (`--accent: #16a34a`, mesh gradients, btn-primary `#15803d -> #16a34a -> #22c55e`). `src/app/page.tsx` rewritten: header now has `NavAuthLink` on left and subscription status pill on right (`מנוי פעיל` / `מנוי לא פעיל`); shield/brand removed; new H1 "מזהה פישינג בעברית. הגנה מפני סקאם בשניות" + subtitle about scam protection; FEATURES grid + irrelevant badge removed; new `ExampleAnalysisPreview` shows a realistic Hebrew Bank Leumi phishing SMS with all four cards filled in; loading is a single smooth `ProgressBar` (0->30 over 8s, 30->90 over 15s, 90->99 over 5s, 100 on done) replacing both `SkeletonCards` and `WaitingIndicator`; after results, a follow-up textarea + "בדוק את ההודעה" button auto-renders so users no longer need to scroll up or "reset" - new submission goes through the same `/api/analyze`. `NavAuthLink`, `SupabaseMagicLinkForm`, `AuthFullPageCard`, `auth/login/page.tsx`, `layout.tsx` all switched to emerald/green classes. Standardized error codes added: `AUTH-001/100-303`, `REG-100-110`, `PROF-401/501`, `BILL-101-501` returned in JSON `eventCode`+`message` and surfaced in user-facing Hebrew strings (analyze already had `AN-xxx`). New file `ERROR_CODES.md` at repo root: Hebrew-only reference table of every code, where it fires, and remediation, plus convention guidance for adding new codes.
 - 2026-05-08 15:15:00 +03:00: Reworked `NavAuthLink` profile menu: dropdown centers under avatar button; avatar card shows centered preview then scrollable preset strip (24px, LTR row) + URL; name/save below; tighter `w-72`/padding vs old `w-80` grid.

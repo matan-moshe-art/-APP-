@@ -4,7 +4,7 @@
 >
 > כל שגיאה שמוצגת למשתמש מסתיימת בקוד מהצורה `XXX-NNN` (לדוגמה `AN-201`, `AUTH-101`). כשמשתמש מדווח על תקלה, בקשו ממנו את הקוד שראה - הוא יצביע ישירות על המקור.
 
-האפליקציה היא **כלי לזיהוי פישינג בעברית**: המשתמש מדביק SMS / מייל / הודעה חשודה, והמערכת בודקת האם מדובר בניסיון גניבת מידע או כסף ומסבירה מה לעשות הלאה.
+האפליקציה כוללת **כלי לזיהוי פישינג בעברית** ו-**כלי לסיכום אימיילים ארוכים** (עמוד `/summarize`): המשתמש מדביק טקסט, והמערכת מחזירה תשובה מובנית לפי הפרומפט.
 
 ---
 
@@ -13,6 +13,7 @@
 | קידומת | תחום | קובץ ראשי |
 |--------|------|-----------|
 | `AN-` | ניתוח הודעה (Analyze) | [src/app/api/analyze/route.ts](src/app/api/analyze/route.ts) |
+| `SM-` | סיכום אימיילים (Summarize) | [src/app/api/summarize/route.ts](src/app/api/summarize/route.ts) |
 | `AUTH-` | התחברות / כניסה | [src/components/auth/SupabaseMagicLinkForm.tsx](src/components/auth/SupabaseMagicLinkForm.tsx), [src/app/auth/callback/route.ts](src/app/auth/callback/route.ts) |
 | `REG-` | הרשמה | [src/components/auth/SupabaseMagicLinkForm.tsx](src/components/auth/SupabaseMagicLinkForm.tsx) |
 | `PROF-` | פרופיל / סנכרון משתמש | [src/app/api/auth/sync/route.ts](src/app/api/auth/sync/route.ts) |
@@ -41,6 +42,29 @@
 | `AN-304` | חריגה כללית מ-OpenAI | `src/app/api/analyze/route.ts` | לבדוק לוגים בשרת |
 | `AN-500` | תשובה לא צפויה מהשרת בצד הלקוח | `src/app/page.tsx` | לבדוק לוגים של ה-API |
 | `AN-501` | התשובה נכנסה לזרם אבל לא תאמה לאף מבנה ידוע | `src/app/page.tsx` | באג בלקוח - שדרוג גרסה |
+
+---
+
+## SM — סיכום אימיילים
+
+| קוד | מה קרה | היכן | מה לעשות |
+|-----|--------|------|----------|
+| `SM-001` | אין חיבור לאינטרנט בצד הלקוח | `src/app/summarize/page.tsx` | לוודא שהמשתמש מחובר לרשת |
+| `SM-002` | כשל ברשת בעת קריאה ל-`/api/summarize` | `src/app/summarize/page.tsx` | בעיית רשת אצל המשתמש או בעיה ב-Next.js server |
+| `SM-101` | `SUMMARIZE_WEBHOOK_URL` מוגדר אבל אינו URL תקין | `src/app/api/summarize/route.ts` | לתקן את `.env.local` - הכתובת חייבת להתחיל ב-`http://` או `https://` |
+| `SM-102` | אין הגדרת webhook ואין `OPENAI_API_KEY` | `src/app/api/summarize/route.ts` | להגדיר לפחות אחד מהשניים בסביבה |
+| `SM-201` | כשל כללי בשליחה ל-webhook (n8n) | `src/app/api/summarize/route.ts` | לבדוק ש-n8n זמין ושהזרימה פעילה |
+| `SM-202` | webhook החזיר 401/403 - בעיית הרשאה | `src/app/api/summarize/route.ts` | לבדוק `SUMMARIZE_WEBHOOK_AUTH_HEADER_*` אם הוגדר |
+| `SM-204` | DNS לא מוצא את ה-host (`ENOTFOUND`/`ECONNREFUSED`) | `src/app/api/summarize/route.ts` | לבדוק שכתובת ה-webhook נכונה ושהדומיין חי |
+| `SM-205` | webhook החזיר 404 - הנתיב לא קיים | `src/app/api/summarize/route.ts` | הזרימה ב-n8n כובתה או הוסרה. להפעיל מחדש |
+| `SM-207` | webhook הצליח אבל החזיר תשובה שלא ניתן לפרש | `src/app/api/summarize/route.ts` | לבדוק את הפלט של "Respond to Webhook" ב-n8n - חייבים להיות 4 שדות: `topic`, `urgency`, `actions`, `recommendations` |
+| `SM-208` | polling הגיע ל-timeout (5 דקות) | `src/app/summarize/page.tsx` | n8n לא חזר עם תשובה. לבדוק את הזרימה |
+| `SM-301` | OpenAI החזיר תשובה ריקה | `src/app/api/summarize/route.ts` | לנסות שוב; אם חוזר - לבדוק מודל ופרומפט |
+| `SM-302` | OpenAI החזיר תשובה שאינה JSON תקין | `src/app/api/summarize/route.ts` | לבדוק שהפרומפט דורש `response_format: json_object` |
+| `SM-303` | OpenAI החזיר JSON אבל בלי השדות הנדרשים | `src/app/api/summarize/route.ts` | לבדוק את הפרומפט ב-`src/lib/summarize-prompt.ts` |
+| `SM-304` | חריגה כללית מ-OpenAI | `src/app/api/summarize/route.ts` | לבדוק לוגים בשרת |
+| `SM-500` | תשובה לא צפויה מהשרת בצד הלקוח | `src/app/summarize/page.tsx` | לבדוק לוגים של ה-API |
+| `SM-501` | התשובה נכנסה לזרם אבל לא תאמה לאף מבנה ידוע | `src/app/summarize/page.tsx` | באג בלקוח - שדרוג גרסה |
 
 ---
 
@@ -110,7 +134,7 @@
 
 כשאתם מוסיפים נתיב חדש או נקודת כשל חדשה:
 
-1. בחרו את הקידומת המתאימה (`AN-`, `AUTH-`, `REG-`, `PROF-`, `BILL-`).
+1. בחרו את הקידומת המתאימה (`AN-`, `SM-`, `AUTH-`, `REG-`, `PROF-`, `BILL-`).
 2. השתמשו בטווחים הבאים:
    - `1xx` - הגדרות / קונפיג חסר.
    - `2xx` - תקלת תשתית / רשת / ספק חיצוני.
