@@ -11,7 +11,7 @@ export function AuthFullPageCard({
   return (
     <div className="relative flex min-h-full flex-col items-center justify-center p-4 sm:p-6">
       <div
-        className="pointer-events-none absolute inset-0 bg-[#0a0a1a]/80"
+        className="pointer-events-none absolute inset-0 bg-[#050a08]/85"
         aria-hidden
       />
       <div

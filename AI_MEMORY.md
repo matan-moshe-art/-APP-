@@ -1,10 +1,11 @@
 # AI Memory
 
-Last updated: 2026-05-18 15:01:00 +03:00
+Last updated: 2026-05-18 17:32:00 +03:00
 
 ## Durable Preferences
 
 - GPTBuilder (Hebrew meta-prompt): during intake/clarification, the assistant must ask **at most one** clear question per reply; avoid stacked questions and fake follow-ups ("anything else?", "מה עוד?") because turn-to-turn memory in chat UIs can drop context.
+- User prefers ultra-concise deployment help in exact copy/paste `KEY=VALUE` format (no long explanations).
 - Read this file at the start of every task in this workspace.
 - Update this file when the user shares lasting preferences, constraints, decisions, or wants important outputs preserved.
 - After updating this file, explicitly tell the user `Memory updated: <timestamp>`.
@@ -20,7 +21,9 @@ Last updated: 2026-05-18 15:01:00 +03:00
 
 ## Recent Requests
 
+- 2026-05-18 17:32:00 +03:00: User requested to push all current local updates to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-05-18 15:00:00 +03:00: User asked to push all newly updated local code to GitHub repo `matan-moshe-art/-APP-`.
+- 2026-05-18 16:08:00 +03:00: User requested exact Vercel env values in copy-paste format only; reported deployed site shows `AUTH-001` on `/auth/login`.
 - 2026-05-18 14:50:00 +03:00: User requested professional branded email templates for all Supabase auth emails (confirm signup, magic link, reset password, change email, invite). Created `supabase-email-templates.html` with dark-header/green-CTA branded HTML matching the app's visual identity; all in Hebrew RTL with security tips. Templates need to be pasted into Supabase Dashboard → Authentication → Email Templates.
 - 2026-05-18 14:45:00 +03:00: User requested proper password validation on signup: minimum 8 chars, uppercase English letter, lowercase English letter, digit, special character, English-only (no Hebrew). Added `validatePassword` + real-time `PasswordChecklist` UI to `SupabaseMagicLinkForm.tsx`; replaced old 6-char check with full rule set; updated `ERROR_CODES.md` REG-110 description.
 - 2026-05-17 21:03:00 +03:00: User uses single n8n flow ("המנתח הודעות") for both analyze and summarize; updated `SUMMARIZE_WEBHOOK_URL` to same endpoint `https://ddddffdddd.app.n8n.cloud/webhook/7325da02-5896-4a71-a89f-2540a7a732fe`; made `extractSummarizeResult` accept analyzer-format fields (`meaning`/`action`/`suspicious` → `topic`/`actions`/`recommendations`) and plain-text fallback.
