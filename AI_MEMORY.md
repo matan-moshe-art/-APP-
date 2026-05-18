@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-12 21:05:00 +03:00
+Last updated: 2026-05-18 15:00:00 +03:00
 
 ## Durable Preferences
 
@@ -20,6 +20,14 @@ Last updated: 2026-05-12 21:05:00 +03:00
 
 ## Recent Requests
 
+- 2026-05-18 15:00:00 +03:00: User asked to push all newly updated local code to GitHub repo `matan-moshe-art/-APP-`.
+- 2026-05-18 14:50:00 +03:00: User requested professional branded email templates for all Supabase auth emails (confirm signup, magic link, reset password, change email, invite). Created `supabase-email-templates.html` with dark-header/green-CTA branded HTML matching the app's visual identity; all in Hebrew RTL with security tips. Templates need to be pasted into Supabase Dashboard → Authentication → Email Templates.
+- 2026-05-18 14:45:00 +03:00: User requested proper password validation on signup: minimum 8 chars, uppercase English letter, lowercase English letter, digit, special character, English-only (no Hebrew). Added `validatePassword` + real-time `PasswordChecklist` UI to `SupabaseMagicLinkForm.tsx`; replaced old 6-char check with full rule set; updated `ERROR_CODES.md` REG-110 description.
+- 2026-05-17 21:03:00 +03:00: User uses single n8n flow ("המנתח הודעות") for both analyze and summarize; updated `SUMMARIZE_WEBHOOK_URL` to same endpoint `https://ddddffdddd.app.n8n.cloud/webhook/7325da02-5896-4a71-a89f-2540a7a732fe`; made `extractSummarizeResult` accept analyzer-format fields (`meaning`/`action`/`suspicious` → `topic`/`actions`/`recommendations`) and plain-text fallback.
+- 2026-05-17 20:02:00 +03:00: User reverted analyze webhook back to `https://ddddffdddd.app.n8n.cloud/webhook/7325da02-5896-4a71-a89f-2540a7a732fe`, POST, auth None; `.env.local` updated.
+- 2026-05-17 19:56:00 +03:00: User changed analyze webhook to brand-new production n8n endpoint `https://ddddffddddd.app.n8n.cloud/webhook/89152584-0e49-4365-a65b-c7ddf6a09d2f`, POST, auth None, Respond to Webhook node; `.env.local` updated.
+- 2026-05-17 19:55:00 +03:00: User changed analyze webhook to previous endpoint `https://ddddffdddd.app.n8n.cloud/webhook/7325da02-5896-4a71-a89f-2540a7a732fe`, POST, auth None, Respond to Webhook node; `.env.local` updated.
+- 2026-05-17 19:45:00 +03:00: User changed analyze webhook from `cursor-test.app.n8n.cloud` (production) to `ddddffddd.app.n8n.cloud` (test), auth None; `.env.local` updated.
 - 2026-05-12 21:05:00 +03:00: User asked to push all local work (summarize feature, timeouts, related updates) to GitHub `matan-moshe-art/-APP-` `master`.
 - 2026-05-12 19:57:00 +03:00: User reported n8n summarize webhook returns correct AI output but website doesn't display it. Debugged as **25-second timeout** causing the fetch to abort before n8n AI Agent completes; the inline "Respond to Webhook" response is lost and polling never resolves.
 - 2026-05-12 18:15:00 +03:00: User asked to rebrand email summarizer heading to **complex/unstructured message summarizer** (only the summarize section title, not the main page) and wire n8n webhook.

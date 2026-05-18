@@ -1,0 +1,131 @@
+<!--
+  ╔════════════════════════════════════════════════════════════════════╗
+  ║  Supabase Email Templates — מזהה פישינג                          ║
+  ║                                                                    ║
+  ║  HOW TO APPLY:                                                     ║
+  ║  1. Go to Supabase Dashboard → Authentication → Email Templates    ║
+  ║  2. For each template below, copy the HTML into the matching tab   ║
+  ║  3. Update the Subject line as noted                               ║
+  ║  4. Click Save                                                     ║
+  ║                                                                    ║
+  ║  Templates included:                                               ║
+  ║   • Confirm Signup                                                 ║
+  ║   • Magic Link                                                     ║
+  ╚════════════════════════════════════════════════════════════════════╝
+-->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     1. CONFIRM SIGNUP
+     Subject: אישור הרשמה — מזהה פישינג
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f4f5;padding:40px 0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#0a0a1a 0%,#0c1c12 100%);padding:32px 40px;text-align:center;">
+            <div style="display:inline-block;background-color:#16a34a;width:48px;height:48px;border-radius:50%;line-height:48px;text-align:center;font-size:22px;">🛡️</div>
+            <h1 style="color:#ffffff;font-size:22px;margin:16px 0 0;font-weight:700;direction:rtl;">מזהה פישינג</h1>
+            <p style="color:#94a3b8;font-size:13px;margin:4px 0 0;direction:rtl;">הגנה מפני סקאם בעברית</p>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px;direction:rtl;text-align:right;">
+            <h2 style="color:#0a0a1a;font-size:20px;margin:0 0 12px;font-weight:600;">ברוכים הבאים! 🎉</h2>
+            <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+              תודה שנרשמת לשירות <strong>מזהה פישינג</strong>.<br/>
+              כדי להשלים את ההרשמה ולהתחיל להשתמש בשירות, אנא אשרו את כתובת האימייל שלכם בלחיצה על הכפתור למטה.
+            </p>
+            <!-- CTA Button -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td align="center" style="padding:8px 0 28px;">
+                  <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;background-color:#16a34a;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:8px;letter-spacing:0.3px;">
+                    אישור כתובת האימייל
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="color:#6b7280;font-size:13px;line-height:1.6;margin:0;border-top:1px solid #e5e7eb;padding-top:20px;">
+              אם לא ביקשתם להירשם לשירות, תוכלו להתעלם מהודעה זו בבטחה.<br/>
+              הקישור תקף למשך 24 שעות.
+            </p>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background-color:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb;">
+            <p style="color:#9ca3af;font-size:12px;margin:0;direction:rtl;">
+              © 2026 מזהה פישינג — הגנה מפני סקאם בעברית
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     2. MAGIC LINK
+     Subject: קישור כניסה — מזהה פישינג
+     ═══════════════════════════════════════════════════════════════════ -->
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f4f5;padding:40px 0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#0a0a1a 0%,#0c1c12 100%);padding:32px 40px;text-align:center;">
+            <div style="display:inline-block;background-color:#16a34a;width:48px;height:48px;border-radius:50%;line-height:48px;text-align:center;font-size:22px;">🛡️</div>
+            <h1 style="color:#ffffff;font-size:22px;margin:16px 0 0;font-weight:700;direction:rtl;">מזהה פישינג</h1>
+            <p style="color:#94a3b8;font-size:13px;margin:4px 0 0;direction:rtl;">הגנה מפני סקאם בעברית</p>
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px;direction:rtl;text-align:right;">
+            <h2 style="color:#0a0a1a;font-size:20px;margin:0 0 12px;font-weight:600;">קישור כניסה מאובטח 🔐</h2>
+            <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 24px;">
+              קיבלנו בקשת כניסה לחשבון שלכם ב<strong>מזהה פישינג</strong>.<br/>
+              לחצו על הכפתור למטה כדי להיכנס לחשבון באופן מאובטח.
+            </p>
+            <!-- CTA Button -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+              <tr>
+                <td align="center" style="padding:8px 0 28px;">
+                  <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;background-color:#16a34a;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:8px;letter-spacing:0.3px;">
+                    כניסה לחשבון
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <!-- Security note -->
+            <div style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+              <p style="color:#166534;font-size:13px;line-height:1.6;margin:0;">
+                🛡️ <strong>טיפ אבטחה:</strong> לעולם אל תשתפו קישור זה עם אף אחד. צוות מזהה פישינג לעולם לא יבקש ממכם את קישור הכניסה.
+              </p>
+            </div>
+            <p style="color:#6b7280;font-size:13px;line-height:1.6;margin:0;border-top:1px solid #e5e7eb;padding-top:20px;">
+              אם לא ביקשתם להיכנס, תוכלו להתעלם מהודעה זו בבטחה.<br/>
+              הקישור תקף למשך שעה אחת בלבד.
+            </p>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="background-color:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb;">
+            <p style="color:#9ca3af;font-size:12px;margin:0;direction:rtl;">
+              © 2026 מזהה פישינג — הגנה מפני סקאם בעברית
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>

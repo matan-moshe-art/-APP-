@@ -30,7 +30,7 @@
 | `AN-101` | `ANALYZE_WEBHOOK_URL` מוגדר אבל אינו URL תקין | `src/app/api/analyze/route.ts` | לתקן את `.env.local` - הכתובת חייבת להתחיל ב-`http://` או `https://` |
 | `AN-102` | אין הגדרת webhook ואין `OPENAI_API_KEY` | `src/app/api/analyze/route.ts` | להגדיר לפחות אחד מהשניים בסביבה |
 | `AN-201` | כשל כללי בשליחה ל-webhook (n8n) | `src/app/api/analyze/route.ts` | לבדוק ש-n8n זמין ושהזרימה פעילה |
-| `AN-202` | webhook החזיר 401/403 - בעיית הרשאה | `src/app/api/analyze/route.ts` | לבדוק `ANALYZE_WEBHOOK_AUTH_HEADER_*` או Basic Auth |
+| `AN-202` | webhook החזיר 401/403 - בעיית הרשאה | `src/app/api/analyze/route.ts` | לבדוק שה-webhook ב-n8n מוגדר ל-Authentication: None, או שה-`ANALYZE_WEBHOOK_AUTH_HEADER_*` מתאים |
 | `AN-204` | DNS לא מוצא את ה-host (`ENOTFOUND`/`ECONNREFUSED`) | `src/app/api/analyze/route.ts` | לבדוק שכתובת ה-webhook נכונה ושהדומיין חי |
 | `AN-205` | webhook החזיר 404 - הנתיב לא קיים | `src/app/api/analyze/route.ts` | הזרימה ב-n8n כובתה או הוסרה. להפעיל מחדש |
 | `AN-206` | תקלה ב-OpenAI כ-fallback | `src/app/api/analyze/route.ts` | לבדוק את ה-API key, מיכסה, וסטטוס OpenAI |
@@ -99,7 +99,7 @@
 | `REG-103` | הרשמה כבויה ב-Supabase | טופס הרשמה | להפעיל "Allow new users to sign up" ב-Auth Providers |
 | `REG-104` | חריגה ממכסת מיילים של Supabase בעת הרשמה | טופס הרשמה | להמתין |
 | `REG-105` | כשל הרשמה כללי | טופס הרשמה | לבדוק לוגים |
-| `REG-110` | סיסמה קצרה מ-6 תווים (validation בצד הלקוח) | טופס הרשמה | המשתמש צריך להאריך |
+| `REG-110` | הסיסמה לא עומדת בדרישות מורכבות (לפחות 8 תווים, אות גדולה, אות קטנה, ספרה, תו מיוחד, אותיות באנגלית בלבד) | טופס הרשמה | המשתמש רואה צ'קליסט בזמן אמת עם כל הדרישות; צריך לתקן את הסיסמה לפי הרשימה |
 
 ---
 

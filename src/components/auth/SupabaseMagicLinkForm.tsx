@@ -3,8 +3,79 @@
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseClientEnvConfigured } from "@/lib/supabase/env";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { AuthFullPageCard } from "./AuthFullPageCard";
+
+/* ── Password-strength rules (signup only) ── */
+
+type PasswordRule = {
+  id: string;
+  label: string;
+  test: (pw: string) => boolean;
+};
+
+const PASSWORD_RULES: PasswordRule[] = [
+  { id: "len", label: "לפחות 8 תווים", test: (pw) => pw.length >= 8 },
+  {
+    id: "upper",
+    label: "אות גדולה באנגלית (A-Z)",
+    test: (pw) => /[A-Z]/.test(pw),
+  },
+  {
+    id: "lower",
+    label: "אות קטנה באנגלית (a-z)",
+    test: (pw) => /[a-z]/.test(pw),
+  },
+  { id: "digit", label: "ספרה (0-9)", test: (pw) => /[0-9]/.test(pw) },
+  {
+    id: "special",
+    label: "תו מיוחד (!@#$%^&*...)",
+    test: (pw) => /[^A-Za-z0-9]/.test(pw),
+  },
+  {
+    id: "ascii",
+    label: "אותיות באנגלית בלבד (ללא עברית)",
+    test: (pw) => /^[A-Za-z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]*$/.test(pw),
+  },
+];
+
+function validatePassword(pw: string): {
+  valid: boolean;
+  results: { id: string; passed: boolean }[];
+} {
+  const results = PASSWORD_RULES.map((r) => ({
+    id: r.id,
+    passed: r.test(pw),
+  }));
+  return { valid: results.every((r) => r.passed), results };
+}
+
+function PasswordChecklist({ password }: { password: string }) {
+  const { results } = useMemo(() => validatePassword(password), [password]);
+  return (
+    <ul className="mt-2 space-y-1 text-xs" dir="rtl">
+      {PASSWORD_RULES.map((rule) => {
+        const r = results.find((x) => x.id === rule.id);
+        const passed = r?.passed ?? false;
+        return (
+          <li
+            key={rule.id}
+            className={`flex items-center gap-1.5 transition-colors ${
+              passed ? "text-emerald-400" : "text-zinc-500"
+            }`}
+          >
+            <span className="inline-block w-4 text-center">
+              {passed ? "\u2713" : "\u2022"}
+            </span>
+            {rule.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/* ── Helpers ── */
 
 function safeNextPath(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) {
@@ -231,12 +302,15 @@ export function SupabaseMagicLinkForm() {
       setError({ message: "נא להזין סיסמה.", code: "AUTH-111" });
       return;
     }
-    if (passwordMode === "signup" && password.length < 6) {
-      setError({
-        message: "הסיסמה חייבת לכלול לפחות 6 תווים.",
-        code: "REG-110",
-      });
-      return;
+    if (passwordMode === "signup") {
+      const { valid } = validatePassword(password);
+      if (!valid) {
+        setError({
+          message: "הסיסמה לא עומדת בכל הדרישות. בדקו את הרשימה למטה.",
+          code: "REG-110",
+        });
+        return;
+      }
     }
 
     const origin = window.location.origin;
@@ -408,6 +482,9 @@ export function SupabaseMagicLinkForm() {
                     {showPassword ? "הסתר" : "הצג"}
                   </button>
                 </div>
+                {passwordMode === "signup" && (
+                  <PasswordChecklist password={password} />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-zinc-950/50 p-1">

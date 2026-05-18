@@ -101,12 +101,7 @@ type SummarizeBody = {
   text?: unknown;
 };
 
-function isSummarizeResult(r: Record<string, unknown>): r is {
-  topic: string;
-  urgency: string;
-  actions: string;
-  recommendations: string;
-} {
+function isSummarizeResult(r: Record<string, unknown>): boolean {
   return (
     typeof r.topic === "string" &&
     r.topic.trim().length > 0 &&
@@ -117,6 +112,46 @@ function isSummarizeResult(r: Record<string, unknown>): r is {
     typeof r.recommendations === "string" &&
     r.recommendations.trim().length > 0
   );
+}
+
+function isAnalyzerResult(r: Record<string, unknown>): boolean {
+  return (
+    typeof r.meaning === "string" &&
+    r.meaning.trim().length > 0 &&
+    typeof r.urgency === "string" &&
+    r.urgency.trim().length > 0 &&
+    typeof r.action === "string" &&
+    r.action.trim().length > 0 &&
+    typeof r.suspicious === "string" &&
+    r.suspicious.trim().length > 0
+  );
+}
+
+function mapAnalyzerToSummarize(r: Record<string, unknown>): SummarizeResult {
+  return {
+    topic: String(r.meaning).trim(),
+    urgency: String(r.urgency).trim(),
+    actions: String(r.action).trim(),
+    recommendations: String(r.suspicious).trim(),
+  };
+}
+
+function extractPlainText(raw: unknown): string | null {
+  if (typeof raw === "string" && raw.trim().length > 20) return raw.trim();
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.output === "string" && obj.output.trim().length > 20)
+      return obj.output.trim();
+    if (typeof obj.text === "string" && obj.text.trim().length > 20)
+      return obj.text.trim();
+    if (typeof obj.response === "string" && obj.response.trim().length > 20)
+      return obj.response.trim();
+    if (typeof obj.result === "string" && obj.result.trim().length > 20)
+      return obj.result.trim();
+    if (typeof obj.message === "string" && obj.message.trim().length > 20)
+      return obj.message.trim();
+  }
+  return null;
 }
 
 function extractSummarizeResult(raw: unknown): SummarizeResult | null {
@@ -154,11 +189,15 @@ function extractSummarizeResult(raw: unknown): SummarizeResult | null {
 
     if (isSummarizeResult(obj)) {
       return {
-        topic: obj.topic.trim(),
-        urgency: obj.urgency.trim(),
-        actions: obj.actions.trim(),
-        recommendations: obj.recommendations.trim(),
+        topic: String(obj.topic).trim(),
+        urgency: String(obj.urgency).trim(),
+        actions: String(obj.actions).trim(),
+        recommendations: String(obj.recommendations).trim(),
       };
+    }
+
+    if (isAnalyzerResult(obj)) {
+      return mapAnalyzerToSummarize(obj);
     }
 
     queue.push(
@@ -170,6 +209,16 @@ function extractSummarizeResult(raw: unknown): SummarizeResult | null {
       obj.response,
     );
     for (const value of Object.values(obj)) queue.push(value);
+  }
+
+  const plainText = extractPlainText(raw);
+  if (plainText) {
+    return {
+      topic: "סיכום הודעה",
+      urgency: "—",
+      actions: plainText,
+      recommendations: "—",
+    };
   }
 
   return null;
