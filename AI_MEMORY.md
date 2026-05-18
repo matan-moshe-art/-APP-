@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-18 17:32:00 +03:00
+Last updated: 2026-05-18 17:33:00 +03:00
 
 ## Durable Preferences
 
@@ -88,6 +88,7 @@ Last updated: 2026-05-18 17:32:00 +03:00
 
 ## Recent Outputs
 
+- 2026-05-18 17:33:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `5079916` (`fix(ui): unify auth screen with full green palette`) updates `src/app/globals.css` and `src/components/auth/AuthFullPageCard.tsx` to remove purple/navy tones from auth background and keep a consistent green theme.
 - 2026-05-18 15:01:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `1407d31` (`feat(auth): harden signup and summarize handling`) includes signup password checklist/validation, summarize parser support for analyzer-shaped/plain-text n8n responses, `.env.example`/`ERROR_CODES.md` updates, and `supabase-email-templates.html`; intentionally left local `.cursor/debug-*.log` files uncommitted.
 - 2026-05-12 21:05:00 +03:00: Pushed `master` to `origin` (`054d717..f7ebac3`): commit `f7ebac3` includes summarize routes/page/libs, analyze timeout + debug-log removal, `.env.example` / `ERROR_CODES.md` / home-nav-portal updates; intentionally omitted `.cursor/debug-604a7b.log` and did not commit `.next/` (gitignored).
 - 2026-05-12 19:57:00 +03:00: Fixed webhook timeout bug: increased `WEBHOOK_TIMEOUT_MS` from 25s to 120s in both `/api/summarize/route.ts` and `/api/analyze/route.ts` so n8n AI Agent has enough time to respond inline via "Respond to Webhook" node. Cleaned up all leftover debug logging (`fetch('http://127.0.0.1:...')` calls) from both routes and removed `src/lib/billing/debug-log.ts`. Build succeeds.
