@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-18 17:33:00 +03:00
+Last updated: 2026-05-28 14:46:00 +03:00
 
 ## Durable Preferences
 
@@ -21,6 +21,8 @@ Last updated: 2026-05-18 17:33:00 +03:00
 
 ## Recent Requests
 
+- 2026-05-28 14:46:00 +03:00: User requested pushing all current repo information/updates to GitHub.
+- 2026-05-21 13:44:00 +03:00: User requested a plan to add forgot-password UX, safely remove stored auth email/password traces, and debug production Supabase magic-link login failing because links/settings still behave like localhost.
 - 2026-05-18 17:32:00 +03:00: User requested to push all current local updates to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-05-18 15:00:00 +03:00: User asked to push all newly updated local code to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-05-18 16:08:00 +03:00: User requested exact Vercel env values in copy-paste format only; reported deployed site shows `AUTH-001` on `/auth/login`.
