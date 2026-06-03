@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-28 14:50:00 +03:00
+Last updated: 2026-06-03 12:00:00 +03:00
 
 ## Durable Preferences
 
@@ -21,7 +21,7 @@ Last updated: 2026-05-28 14:50:00 +03:00
 
 ## Recent Requests
 
-- 2026-05-28 14:46:00 +03:00: User requested pushing all current repo information/updates to GitHub.
+- 2026-06-03 12:00:00 +03:00: Automation triggered Hebrew message analyzer prompt update (`ANALYZE_SYSTEM_PROMPT`) on branch `cursor/hebrew-message-analysis-prompt-84bc`; sample message was Bank Leumi phishing SMS with fake domain `leumi-secure-verify.co`.
 - 2026-05-28 14:50:00 +03:00: User requested pushing current local repo state to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-05-21 13:44:00 +03:00: User requested a plan to add forgot-password UX, safely remove stored auth email/password traces, and debug production Supabase magic-link login failing because links/settings still behave like localhost.
 - 2026-05-18 17:32:00 +03:00: User requested to push all current local updates to GitHub repo `matan-moshe-art/-APP-`.
@@ -91,6 +91,7 @@ Last updated: 2026-05-28 14:50:00 +03:00
 
 ## Recent Outputs
 
+- 2026-06-03 12:00:00 +03:00: Updated `src/lib/analyze-prompt.ts`: replaced Unicode escapes with readable Hebrew in `ANALYZE_SYSTEM_PROMPT` (content unchanged); build succeeds; pushed to `cursor/hebrew-message-analysis-prompt-84bc`.
 - 2026-05-28 14:47:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `aa24650` (`docs(memory): record current push request`) records the latest push request in `AI_MEMORY.md`; local `.cursor/debug-*.log` files were intentionally left uncommitted.
 - 2026-05-28 14:50:00 +03:00: Verified `master` remote `origin` is `https://github.com/matan-moshe-art/-APP-.git`; refreshed unchanged `src/proxy.ts`; `git push origin master` reported `Everything up-to-date`; local `.cursor/debug-*.log` files intentionally left uncommitted.
 - 2026-05-18 17:33:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `5079916` (`fix(ui): unify auth screen with full green palette`) updates `src/app/globals.css` and `src/components/auth/AuthFullPageCard.tsx` to remove purple/navy tones from auth background and keep a consistent green theme.
