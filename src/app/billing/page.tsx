@@ -35,10 +35,6 @@ export default function BillingPage() {
     try {
       const res = await fetch("/api/billing/subscription");
       if (!res.ok) {
-        if (res.status === 401) {
-          router.replace("/auth/login?next=%2Fbilling");
-          return;
-        }
         const errorData = await safeJson<{ message?: string }>(res);
         setSub(null);
         setError(errorData?.message ?? "לא ניתן לטעון את סטטוס המנוי כרגע.");
@@ -64,10 +60,6 @@ export default function BillingPage() {
     setNotice(null);
     try {
       const res = await fetch("/api/billing/checkout", { method: "POST" });
-      if (res.status === 401) {
-        router.replace("/auth/login?next=%2Fbilling");
-        return;
-      }
       const data = await safeJson<{
         checkoutUrl?: string;
         message?: string;
@@ -103,10 +95,6 @@ export default function BillingPage() {
     setNotice(null);
     try {
       const res = await fetch("/api/billing/cancel", { method: "POST" });
-      if (res.status === 401) {
-        router.replace("/auth/login?next=%2Fbilling");
-        return;
-      }
       const data = await safeJson<{ message?: string }>(res);
       if (!res.ok) {
         throw new Error(data?.message ?? "ביטול מנוי נכשל.");

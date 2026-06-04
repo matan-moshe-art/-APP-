@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-05-28 14:50:00 +03:00
+Last updated: 2026-06-03 23:06:00 +03:00
 
 ## Durable Preferences
 
@@ -21,6 +21,11 @@ Last updated: 2026-05-28 14:50:00 +03:00
 
 ## Recent Requests
 
+- 2026-06-03 23:06:00 +03:00: User rotated both Cursor webhook auth tokens (analyze + summarize) and asked to update the app immediately so requests work again.
+- 2026-06-03 22:45:00 +03:00: User provided both Cursor automation webhook auth tokens. Summarize: `SUMMARIZE_WEBHOOK_AUTH_TOKEN` set in `.env.local`. Analyze (phishing): `ANALYZE_WEBHOOK_AUTH_TOKEN` set in `.env.local`. Cursor automation webhooks are **asynchronous** — they return `{ success, backgroundComposerId }` immediately and run a cloud agent in the background. App now uses polling via Cloud Agents API (`GET /v1/agents/{id}/runs/{runId}`) to wait for the `result` text.
+- 2026-06-03 19:40:00 +03:00: User provided Cursor automation webhook URL for summarize feature: `https://api2.cursor.sh/automations/webhook/38d045b9-ceac-4f97-8198-3e2212abe645`
+- 2026-06-01 16:00:00 +03:00: User asked to remove all summarize webhook integration from the app (n8n URL, callback, polling, env vars); summarize should use OpenAI only via `src/lib/summarize-prompt.ts`; user will configure webhooks elsewhere.
+- 2026-06-01 14:30:00 +03:00: User runs the app on localhost only and wants no login. Requested cutting all ties with Supabase and removing authentication entirely (login, signup, reset password).
 - 2026-05-28 14:46:00 +03:00: User requested pushing all current repo information/updates to GitHub.
 - 2026-05-28 14:50:00 +03:00: User requested pushing current local repo state to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-05-21 13:44:00 +03:00: User requested a plan to add forgot-password UX, safely remove stored auth email/password traces, and debug production Supabase magic-link login failing because links/settings still behave like localhost.
@@ -91,6 +96,12 @@ Last updated: 2026-05-28 14:50:00 +03:00
 
 ## Recent Outputs
 
+- 2026-06-03 23:06:00 +03:00: Updated `.env.local` with newly rotated Cursor webhook tokens for analyze and summarize automations. Verified both webhook endpoints return HTTP 200 with `{ success: true, backgroundComposerId: ... }` using the new auth values.
+- 2026-06-03 22:45:00 +03:00: Rewrote both `/api/summarize` and `/api/analyze` to use async Cursor automation webhook flow: (1) POST to webhook → get `backgroundComposerId`, (2) poll Cloud Agents API for run status until FINISHED, (3) extract result text → parse JSON. Created `src/lib/cursor-webhook-auth.ts` with `triggerAndWaitForResult()` helper. Auth uses per-route `crsr_…` tokens. Analyze keeps OpenAI as fallback. Removed old n8n-style sync webhook code. `.env.local` has both tokens set. Build succeeds.
+- 2026-06-03 22:10:00 +03:00: Fixed SM-202/AN-202 webhook authentication errors — initial attempt used wrong `CURSOR_API_KEY` approach, later switched to per-automation `crsr_…` tokens from "Generate auth header" on each automation.
+- 2026-06-03 19:40:00 +03:00: Added Cursor automation webhook to `/api/summarize`. Route now POSTs `{ text, prompt }` to `SUMMARIZE_WEBHOOK_URL` (defaults to `https://api2.cursor.sh/automations/webhook/38d045b9-ceac-4f97-8198-3e2212abe645`). Removed OpenAI dependency from summarize route. Updated `.env.local` and `.env.example`. Build succeeds.
+- 2026-06-01 16:00:00 +03:00: Removed all summarize webhook plumbing: deleted `src/app/api/summarize/callback/route.ts`, `src/app/api/summarize/status/[id]/route.ts`, `src/lib/summarize-pending-store.ts`; simplified `src/app/api/summarize/route.ts` to OpenAI-only (`OPENAI_API_KEY` required); removed polling from `src/app/summarize/page.tsx`; stripped `SUMMARIZE_WEBHOOK_*` from `.env.example` and `.env.local`; removed n8n placeholder from `summarize-prompt.ts`; updated `ERROR_CODES.md` SM webhook codes. Analyze webhooks unchanged. `npm run build` succeeds after `.next` cache clear.
+- 2026-06-01 14:30:00 +03:00: Removed all authentication + Supabase. Deleted `src/lib/supabase/*`, `src/app/auth/*` (login + callback), `src/components/auth/*` (SupabaseMagicLinkForm, AuthFullPageCard), `src/components/NavAuthLink.tsx`, `src/app/api/auth/sync/`, `src/lib/auth/app-user.ts`, and `src/proxy.ts` (the auth gate). `src/lib/billing/auth.ts` now returns a fixed local user (`LOCAL_USER_ID = "local-user"`, no Supabase). `/api/analyze` + `/api/summarize` no longer call Supabase `getUser`; they gate on `userHasActiveSubscription(LOCAL_USER_ID)`. Removed `NavAuthLink` from `page.tsx` + `summarize/page.tsx` headers and the billing-page `/auth/login` redirects. Dropped `@supabase/ssr` + `@supabase/supabase-js` from `package.json`; stripped Supabase keys/URLs from `.env.example` and `.env.local`. Billing/subscription feature is KEPT and works via in-memory/cookie test mode (`BILLING_ZERO_PRICE_TEST_MODE`). `npm run build` succeeds; no `/auth` routes remain. Prisma/`AppUser` schema files were left in place but are unused on localhost.
 - 2026-05-28 14:47:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `aa24650` (`docs(memory): record current push request`) records the latest push request in `AI_MEMORY.md`; local `.cursor/debug-*.log` files were intentionally left uncommitted.
 - 2026-05-28 14:50:00 +03:00: Verified `master` remote `origin` is `https://github.com/matan-moshe-art/-APP-.git`; refreshed unchanged `src/proxy.ts`; `git push origin master` reported `Everything up-to-date`; local `.cursor/debug-*.log` files intentionally left uncommitted.
 - 2026-05-18 17:33:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `5079916` (`fix(ui): unify auth screen with full green palette`) updates `src/app/globals.css` and `src/components/auth/AuthFullPageCard.tsx` to remove purple/navy tones from auth background and keep a consistent green theme.

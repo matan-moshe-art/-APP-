@@ -1,6 +1,5 @@
 "use client";
 
-import { NavAuthLink } from "@/components/NavAuthLink";
 import Link from "next/link";
 import {
   useCallback,
@@ -507,11 +506,9 @@ export default function Home() {
                 {"\u2190"}
               </span>
             </Link>
-            <NavAuthLink variant="profile" />
           </div>
 
           <div className="flex items-center gap-3">
-            <NavAuthLink variant="actions" />
             <a
               href="/billing"
               className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-lg transition ${

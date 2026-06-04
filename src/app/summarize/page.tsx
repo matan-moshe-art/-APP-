@@ -1,6 +1,5 @@
 "use client";
 
-import { NavAuthLink } from "@/components/NavAuthLink";
 import Link from "next/link";
 import {
   useCallback,
@@ -116,9 +115,6 @@ function Reveal({
     </div>
   );
 }
-
-const POLL_INTERVAL_MS = 1500;
-const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 function ProgressBar({ done }: { done: boolean }) {
   const [progress, setProgress] = useState(0);
@@ -244,7 +240,6 @@ export default function SummarizePage() {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [entitled, setEntitled] = useState(justActivated);
   const [entitlementLoading, setEntitlementLoading] = useState(!justActivated);
-  const [polling, setPolling] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   const [followUpText, setFollowUpText] = useState("");
@@ -252,73 +247,12 @@ export default function SummarizePage() {
     null,
   );
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollStartRef = useRef<number>(0);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-    setPolling(false);
-  }, []);
-
   const resetOutputs = useCallback(() => {
     setResult(null);
     setError(null);
     setErrorCode(null);
-    setPolling(false);
     setShowResults(false);
-    stopPolling();
-  }, [stopPolling]);
-
-  const startPolling = useCallback(
-    (correlationId: string) => {
-      stopPolling();
-      setPolling(true);
-      pollStartRef.current = Date.now();
-
-      pollRef.current = setInterval(async () => {
-        if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
-          stopPolling();
-          setLoading(false);
-          setError("העיבוד לוקח יותר מדי זמן. נסו שנית.");
-          setErrorCode("SM-208");
-          return;
-        }
-
-        try {
-          const res = await fetch(`/api/summarize/status/${correlationId}`);
-          const data: unknown = await res.json().catch(() => null);
-
-          if (
-            data &&
-            typeof data === "object" &&
-            "status" in data &&
-            (data as { status: string }).status === "completed" &&
-            "result" in data
-          ) {
-            const r = (data as { result: Record<string, unknown> }).result;
-            setResult({
-              topic: String(r.topic),
-              urgency: String(r.urgency),
-              actions: String(r.actions),
-              recommendations: String(r.recommendations),
-            });
-            setLoading(false);
-            stopPolling();
-          }
-        } catch {
-          // network hiccup; keep polling
-        }
-      }, POLL_INTERVAL_MS);
-    },
-    [stopPolling],
-  );
-
-  useEffect(() => {
-    return () => stopPolling();
-  }, [stopPolling]);
+  }, []);
 
   useEffect(() => {
     if (justActivated) {
@@ -397,7 +331,6 @@ export default function SummarizePage() {
       setResult(null);
       setError(null);
       setErrorCode(null);
-      setPolling(false);
 
       try {
         const res = await fetch("/api/summarize", {
@@ -433,19 +366,6 @@ export default function SummarizePage() {
         if (
           data &&
           typeof data === "object" &&
-          "accepted" in data &&
-          (data as { accepted: unknown }).accepted === true &&
-          "correlationId" in data &&
-          typeof (data as { correlationId: unknown }).correlationId ===
-            "string"
-        ) {
-          startPolling((data as { correlationId: string }).correlationId);
-          return;
-        }
-
-        if (
-          data &&
-          typeof data === "object" &&
           "topic" in data &&
           "urgency" in data &&
           "actions" in data &&
@@ -466,12 +386,10 @@ export default function SummarizePage() {
         setError("אין חיבור לאינטרנט. בדקו את החיבור ונסו שנית.");
         setErrorCode("SM-002");
       } finally {
-        if (!pollRef.current) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     },
-    [entitled, resetOutputs, startPolling],
+    [entitled, resetOutputs],
   );
 
   const summarize = useCallback(
@@ -505,11 +423,9 @@ export default function SummarizePage() {
                 {"\u2190"}
               </span>
             </Link>
-            <NavAuthLink variant="profile" />
           </div>
 
           <div className="flex items-center gap-3">
-            <NavAuthLink variant="actions" />
             <a
               href="/billing"
               className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-lg transition ${
@@ -664,7 +580,7 @@ export default function SummarizePage() {
             </div>
           </Reveal>
 
-          {!showResults ? null : loading || polling ? (
+          {!showResults ? null : loading ? (
             <ProgressBar done={false} />
           ) : error ? (
             <div

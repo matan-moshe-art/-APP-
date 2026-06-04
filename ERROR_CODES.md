@@ -51,14 +51,7 @@
 |-----|--------|------|----------|
 | `SM-001` | אין חיבור לאינטרנט בצד הלקוח | `src/app/summarize/page.tsx` | לוודא שהמשתמש מחובר לרשת |
 | `SM-002` | כשל ברשת בעת קריאה ל-`/api/summarize` | `src/app/summarize/page.tsx` | בעיית רשת אצל המשתמש או בעיה ב-Next.js server |
-| `SM-101` | `SUMMARIZE_WEBHOOK_URL` מוגדר אבל אינו URL תקין | `src/app/api/summarize/route.ts` | לתקן את `.env.local` - הכתובת חייבת להתחיל ב-`http://` או `https://` |
-| `SM-102` | אין הגדרת webhook ואין `OPENAI_API_KEY` | `src/app/api/summarize/route.ts` | להגדיר לפחות אחד מהשניים בסביבה |
-| `SM-201` | כשל כללי בשליחה ל-webhook (n8n) | `src/app/api/summarize/route.ts` | לבדוק ש-n8n זמין ושהזרימה פעילה |
-| `SM-202` | webhook החזיר 401/403 - בעיית הרשאה | `src/app/api/summarize/route.ts` | לבדוק `SUMMARIZE_WEBHOOK_AUTH_HEADER_*` אם הוגדר |
-| `SM-204` | DNS לא מוצא את ה-host (`ENOTFOUND`/`ECONNREFUSED`) | `src/app/api/summarize/route.ts` | לבדוק שכתובת ה-webhook נכונה ושהדומיין חי |
-| `SM-205` | webhook החזיר 404 - הנתיב לא קיים | `src/app/api/summarize/route.ts` | הזרימה ב-n8n כובתה או הוסרה. להפעיל מחדש |
-| `SM-207` | webhook הצליח אבל החזיר תשובה שלא ניתן לפרש | `src/app/api/summarize/route.ts` | לבדוק את הפלט של "Respond to Webhook" ב-n8n - חייבים להיות 4 שדות: `topic`, `urgency`, `actions`, `recommendations` |
-| `SM-208` | polling הגיע ל-timeout (5 דקות) | `src/app/summarize/page.tsx` | n8n לא חזר עם תשובה. לבדוק את הזרימה |
+| `SM-102` | `OPENAI_API_KEY` חסר | `src/app/api/summarize/route.ts` | להגדיר `OPENAI_API_KEY` ב-`.env.local` |
 | `SM-301` | OpenAI החזיר תשובה ריקה | `src/app/api/summarize/route.ts` | לנסות שוב; אם חוזר - לבדוק מודל ופרומפט |
 | `SM-302` | OpenAI החזיר תשובה שאינה JSON תקין | `src/app/api/summarize/route.ts` | לבדוק שהפרומפט דורש `response_format: json_object` |
 | `SM-303` | OpenAI החזיר JSON אבל בלי השדות הנדרשים | `src/app/api/summarize/route.ts` | לבדוק את הפרומפט ב-`src/lib/summarize-prompt.ts` |
