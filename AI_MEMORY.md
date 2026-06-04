@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-06-03 23:06:00 +03:00
+Last updated: 2026-06-04 13:10:00 +03:00
 
 ## Durable Preferences
 
@@ -21,6 +21,7 @@ Last updated: 2026-06-03 23:06:00 +03:00
 
 ## Recent Requests
 
+- 2026-06-04 13:10:00 +03:00: User requested pushing all current local updates to GitHub repo `matan-moshe-art/-APP-` and provided the repository URL `https://github.com/matan-moshe-art/-APP-`.
 - 2026-06-03 23:06:00 +03:00: User rotated both Cursor webhook auth tokens (analyze + summarize) and asked to update the app immediately so requests work again.
 - 2026-06-03 22:45:00 +03:00: User provided both Cursor automation webhook auth tokens. Summarize: `SUMMARIZE_WEBHOOK_AUTH_TOKEN` set in `.env.local`. Analyze (phishing): `ANALYZE_WEBHOOK_AUTH_TOKEN` set in `.env.local`. Cursor automation webhooks are **asynchronous** — they return `{ success, backgroundComposerId }` immediately and run a cloud agent in the background. App now uses polling via Cloud Agents API (`GET /v1/agents/{id}/runs/{runId}`) to wait for the `result` text.
 - 2026-06-03 19:40:00 +03:00: User provided Cursor automation webhook URL for summarize feature: `https://api2.cursor.sh/automations/webhook/38d045b9-ceac-4f97-8198-3e2212abe645`
@@ -96,6 +97,7 @@ Last updated: 2026-06-03 23:06:00 +03:00
 
 ## Recent Outputs
 
+- 2026-06-04 13:10:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `f8b7f88` (`refactor(auth): remove Supabase auth and simplify local access`) with auth/supabase removal, summarize/analyze flow updates, and related docs/config changes. Local `.cursor/debug-*.log` files intentionally left uncommitted.
 - 2026-06-03 23:06:00 +03:00: Updated `.env.local` with newly rotated Cursor webhook tokens for analyze and summarize automations. Verified both webhook endpoints return HTTP 200 with `{ success: true, backgroundComposerId: ... }` using the new auth values.
 - 2026-06-03 22:45:00 +03:00: Rewrote both `/api/summarize` and `/api/analyze` to use async Cursor automation webhook flow: (1) POST to webhook → get `backgroundComposerId`, (2) poll Cloud Agents API for run status until FINISHED, (3) extract result text → parse JSON. Created `src/lib/cursor-webhook-auth.ts` with `triggerAndWaitForResult()` helper. Auth uses per-route `crsr_…` tokens. Analyze keeps OpenAI as fallback. Removed old n8n-style sync webhook code. `.env.local` has both tokens set. Build succeeds.
 - 2026-06-03 22:10:00 +03:00: Fixed SM-202/AN-202 webhook authentication errors — initial attempt used wrong `CURSOR_API_KEY` approach, later switched to per-automation `crsr_…` tokens from "Generate auth header" on each automation.
