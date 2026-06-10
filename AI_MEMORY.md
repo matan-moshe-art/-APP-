@@ -1,18 +1,30 @@
 # AI Memory
 
-Last updated: 2026-06-04 13:10:00 +03:00
+Last updated: 2026-06-07 16:35:00 +03:00
 
 ## Durable Preferences
 
 - GPTBuilder (Hebrew meta-prompt): during intake/clarification, the assistant must ask **at most one** clear question per reply; avoid stacked questions and fake follow-ups ("anything else?", "מה עוד?") because turn-to-turn memory in chat UIs can drop context.
-- User prefers ultra-concise deployment help in exact copy/paste `KEY=VALUE` format (no long explanations).
+- User prefers ultra-concise localhost setup help in exact copy/paste `KEY=VALUE` format (no long explanations).
+- App is **localhost-only** — no Vercel or other deployment; do not add deploy docs, Vercel config, or hosted-env instructions unless the user asks.
 - Read this file at the start of every task in this workspace.
 - Update this file when the user shares lasting preferences, constraints, decisions, or wants important outputs preserved.
 - After updating this file, explicitly tell the user `Memory updated: <timestamp>`.
 - Do not store secrets, tokens, passwords, or private keys here.
+- Visual design for this app: restrained, trustworthy, not blank and not “AI SaaS flashy”; green accent preferred; agents should use project skill `.agents/skills/app-design` for colors/layout/UI (not prompts). OK to remove existing clutter (emojis, meshes, glows, per-card rainbow) when polishing.
+- UI flow (2026-06-04): single home screen (`/`) — pick feature (summarizer | scam), then input type (short | long | PDF); PDF → long prompt path; lock feature/type/input during run; “התחלת ניתוח חדש” resets; `/summarize` redirects to `/`. APIs accept `inputType: "short" | "long"`. PDF text via `POST /api/pdf-text`.
+- Cursor webhooks (2026-06-04): four automations — `ANALYZE_*` / `SUMMARIZE_*` each with `_URL_SHORT|LONG` and `_AUTH_TOKEN_SHORT|LONG`; routing in `src/lib/cursor-webhook-routing.ts`. Legacy unsuffixed env vars still map to short.
+- Prompt writing: use `.agents/skills/prompt-craft`; contract-first + internal processing pipeline; keep few-shot examples in `PROMPT_EXAMPLES.md` (not bloated inside `*-prompt.ts`); after drafting a prompt, agent supplies 2–3 example outputs for user to paste into that file. One intake question per turn when unclear.
+- AI training logs (2026-06-07): Postgres via `POSTGRES_URL` in `.env.local` (user sets password themselves — agents must not read/store DB credentials); database `postgres`, table `public.ai_interactions`; stores user message + AI response for every analyze/summarize request; migration `db/migrations/001_ai_interactions.sql`; logging is non-fatal if DB unavailable; **no in-app viewer** — browse in pgAdmin (View/Edit Data or `SELECT * FROM ai_interactions`) only.
+- Postgres logging verified working (2026-06-07): user created table via SQL Shell/pgAdmin; `POSTGRES_URL` wired; analyze requests write rows (`feature`, `input_mode`, `user_message`, `ai_response`, `status`).
 
 ## Durable Context
 
+- 2026-06-07 16:35:00 +03:00: Postgres AI logging end-to-end confirmed working on localhost (`postgres` DB, `ai_interactions` table, pgAdmin on server `APP TEST NM1`). User manages `.env.local` / DB access themselves; app UI does not display logged messages.
+
+- 2026-06-04 19:00:00 +03:00: Second project Agent Skill: `.agents/skills/prompt-craft` — write/refine prompts; examples in `PROMPT_EXAMPLES.md`; deliver example outputs after each draft; tighten analyze/summarize style (contract-first, no duplicate phases).
+- 2026-06-04 15:00:00 +03:00: First project Agent Skill: `.agents/skills/app-design` — visual-only rules anchored on this repo; auto-relevant for design/color/layout requests; bans default-AI UI (meshes, glow, emojis, purple, marketing copy); allows polish and removing irrelevant decoration.
+- 2026-06-04 13:25:00 +03:00: App is localhost-only with no auth, billing, Prisma/Postgres, or Supabase. Analyze + summarize use Cursor automation webhooks; optional OpenAI fallback for analyze only.
 - 2026-05-12 19:25:00 +03:00: Starting a second `next dev` while one is running exits **code 1** with “Another next dev server is already running” (same project dir); stop the existing PID or use one terminal session only.
 - 2026-05-12 19:05:00 +03:00: On this Windows machine Turbopack dev cache under `.next/dev/cache/turbopack` repeatedly breaks (`Persisting failed` / missing `.sst`, os error 3). Default `npm run dev` uses **`next dev --webpack`**; use `npm run dev:turbo` only if Turbopack is needed and the cache is healthy.
 - 2026-04-13 08:26:53 +03:00: The user wants a persistent shared memory for Cursor agents in this workspace.
@@ -21,6 +33,16 @@ Last updated: 2026-06-04 13:10:00 +03:00
 
 ## Recent Requests
 
+- 2026-06-07 16:35:00 +03:00: User confirmed Postgres AI logging works end-to-end; asked to commit to memory.
+- 2026-06-07 16:00:00 +03:00: User hit AN-207 on short analyze ("give me 3000$"); asked prompt-craft rewrite so webhook always returns parseable JSON + good/bad output examples.
+- 2026-06-07 14:30:00 +03:00: User connected Postgres successfully; requested plan + implementation to persist every user message and AI response to database for AI training (store all messages by default, user + AI response).
+- 2026-06-04 22:30:00 +03:00: User requested removing all Vercel/deployment related info; the app is now strictly localhost-only.
+- 2026-06-04 22:15:00 +03:00: User rotated four Cursor automation webhooks (summarize + scam × short + long); asked to wire URLs and auth into the app.
+- 2026-06-04 21:30:00 +03:00: Full app UI redesign — minimal professional Israeli utility; unified flow for summarizer + scam analyzer; input types short/long/PDF with locking; structured Hebrew result sections; no emojis/marketing clutter.
+- 2026-06-04 19:00:00 +03:00: User requested second skill for prompt writing: auto on prompt tasks; phases/role/goals/tasks/pipeline; smart length; examples go to memory file not runtime prompt; wants higher precision than current analyze/summarize prompts.
+- 2026-06-04 18:30:00 +03:00: User requested first project design skill in `.agents/skills/app-design`: anchor = this app only; auto-load on visual design topics; polish OK, remove irrelevant UI even if present; Hebrew preferred, English allowed; scope = anything visible.
+- 2026-06-04 18:00:00 +03:00: User wants the phishing/scam Cursor automation to run as fast as the Hebrew summarize automation (no repo edits, no broad codebase checks). App already sends the same webhook payload shape `{ text, prompt }` for both routes; fix is in Automations UI (see `docs/cursor-automation-analyze.md`).
+- 2026-06-04 13:25:00 +03:00: User requested removing all billing (checkout, subscriptions, payments), all database/Prisma code, and all Supabase-related code from the app as unnecessary.
 - 2026-06-04 13:10:00 +03:00: User requested pushing all current local updates to GitHub repo `matan-moshe-art/-APP-` and provided the repository URL `https://github.com/matan-moshe-art/-APP-`.
 - 2026-06-03 23:06:00 +03:00: User rotated both Cursor webhook auth tokens (analyze + summarize) and asked to update the app immediately so requests work again.
 - 2026-06-03 22:45:00 +03:00: User provided both Cursor automation webhook auth tokens. Summarize: `SUMMARIZE_WEBHOOK_AUTH_TOKEN` set in `.env.local`. Analyze (phishing): `ANALYZE_WEBHOOK_AUTH_TOKEN` set in `.env.local`. Cursor automation webhooks are **asynchronous** — they return `{ success, backgroundComposerId }` immediately and run a cloud agent in the background. App now uses polling via Cloud Agents API (`GET /v1/agents/{id}/runs/{runId}`) to wait for the `result` text.
@@ -32,7 +54,7 @@ Last updated: 2026-06-04 13:10:00 +03:00
 - 2026-05-21 13:44:00 +03:00: User requested a plan to add forgot-password UX, safely remove stored auth email/password traces, and debug production Supabase magic-link login failing because links/settings still behave like localhost.
 - 2026-05-18 17:32:00 +03:00: User requested to push all current local updates to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-05-18 15:00:00 +03:00: User asked to push all newly updated local code to GitHub repo `matan-moshe-art/-APP-`.
-- 2026-05-18 16:08:00 +03:00: User requested exact Vercel env values in copy-paste format only; reported deployed site shows `AUTH-001` on `/auth/login`.
+- 2026-05-18 16:08:00 +03:00: User requested exact copy-paste env values format; reported site shows `AUTH-001` on `/auth/login`.
 - 2026-05-18 14:50:00 +03:00: User requested professional branded email templates for all Supabase auth emails (confirm signup, magic link, reset password, change email, invite). Created `supabase-email-templates.html` with dark-header/green-CTA branded HTML matching the app's visual identity; all in Hebrew RTL with security tips. Templates need to be pasted into Supabase Dashboard → Authentication → Email Templates.
 - 2026-05-18 14:45:00 +03:00: User requested proper password validation on signup: minimum 8 chars, uppercase English letter, lowercase English letter, digit, special character, English-only (no Hebrew). Added `validatePassword` + real-time `PasswordChecklist` UI to `SupabaseMagicLinkForm.tsx`; replaced old 6-char check with full rule set; updated `ERROR_CODES.md` REG-110 description.
 - 2026-05-17 21:03:00 +03:00: User uses single n8n flow ("המנתח הודעות") for both analyze and summarize; updated `SUMMARIZE_WEBHOOK_URL` to same endpoint `https://ddddffdddd.app.n8n.cloud/webhook/7325da02-5896-4a71-a89f-2540a7a732fe`; made `extractSummarizeResult` accept analyzer-format fields (`meaning`/`action`/`suspicious` → `topic`/`actions`/`recommendations`) and plain-text fallback.
@@ -97,6 +119,16 @@ Last updated: 2026-06-04 13:10:00 +03:00
 
 ## Recent Outputs
 
+- 2026-06-07 16:35:00 +03:00: Walked user through Postgres setup (SQL Shell/pgAdmin/PowerShell); `POSTGRES_URL` in `.env.local`; verified `ai_interactions` receives analyze rows; clarified app has no DB viewer — pgAdmin Query Tool / View/Edit Data only.
+- 2026-06-07 16:00:00 +03:00: Hardened `analyze-prompt-short.ts` (headless API, any-language input, anti–file-creation); updated `docs/cursor-automation-analyze.md` (AN-207 table); added analyze short examples + bad outputs to `PROMPT_EXAMPLES.md`.
+- 2026-06-07 14:35:00 +03:00: Implemented Postgres AI interaction logging: `db/migrations/001_ai_interactions.sql`, `src/lib/db-postgres.ts`, `src/lib/ai-interactions-repo.ts`; instrumented `/api/analyze` and `/api/summarize`; updated footer disclaimer, README, `.env.example`; added `pg` dependency.
+- 2026-06-04 22:45:00 +03:00: Finished Vercel cleanup: `.gitignore`, deleted `public/vercel.svg`, removed hosted callback env from `.env.example`, localhost-only preference in memory.
+- 2026-06-04 22:30:00 +03:00: Removed Vercel deploy section from `README.md`; localhost-only focus established.
+- 2026-06-04 22:15:00 +03:00: Added `src/lib/cursor-webhook-routing.ts`; analyze/summarize routes pick webhook by `inputType`; updated `.env.local`, `.env.example`, README. Build OK.
+- 2026-06-04 21:30:00 +03:00: Redesigned app UI: `src/components/AnalysisApp.tsx` (unified flow + state), `src/lib/app-types.ts`, `src/lib/prompt-routing.ts`, `analyze-prompt-short.ts` / `analyze-prompt-long.ts`, `POST /api/pdf-text`, API `inputType` routing; simplified `globals.css`; `/summarize` → `/`; `pdf-parse` dependency. Build succeeds.
+- 2026-06-04 19:00:00 +03:00: Created `.agents/skills/prompt-craft/` (`SKILL.md`, `templates.md`), `PROMPT_EXAMPLES.md` stub, registered in `skills-lock.json`.
+- 2026-06-04 18:30:00 +03:00: Created project Agent Skill `.agents/skills/app-design/` (`SKILL.md` + `reference.md`); registered in `skills-lock.json`. Skill: visual-only, repo anchor, bans AI-template UI, permission to simplify existing emojis/meshes/glows.
+- 2026-06-04 13:25:00 +03:00: Removed billing, Prisma/DB, and Supabase from the app: deleted `src/lib/billing/*`, `src/app/billing`, `src/app/api/billing/*`, `prisma/`, `supabase/`, `supabase-email-templates.html`, `.cursor/mcp.json`, Supabase agent skills; dropped `@prisma/client`/`prisma` from `package.json`; removed subscription gates and billing UI from `page.tsx`/`summarize/page.tsx`; stripped DB persistence from `/api/analyze`; updated `.env.example`, `README.md`, `ERROR_CODES.md`, `skills-lock.json`. `npm run build` succeeds.
 - 2026-06-04 13:10:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commit `f8b7f88` (`refactor(auth): remove Supabase auth and simplify local access`) with auth/supabase removal, summarize/analyze flow updates, and related docs/config changes. Local `.cursor/debug-*.log` files intentionally left uncommitted.
 - 2026-06-03 23:06:00 +03:00: Updated `.env.local` with newly rotated Cursor webhook tokens for analyze and summarize automations. Verified both webhook endpoints return HTTP 200 with `{ success: true, backgroundComposerId: ... }` using the new auth values.
 - 2026-06-03 22:45:00 +03:00: Rewrote both `/api/summarize` and `/api/analyze` to use async Cursor automation webhook flow: (1) POST to webhook → get `backgroundComposerId`, (2) poll Cloud Agents API for run status until FINISHED, (3) extract result text → parse JSON. Created `src/lib/cursor-webhook-auth.ts` with `triggerAndWaitForResult()` helper. Auth uses per-route `crsr_…` tokens. Analyze keeps OpenAI as fallback. Removed old n8n-style sync webhook code. `.env.local` has both tokens set. Build succeeds.

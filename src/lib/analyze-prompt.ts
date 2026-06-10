@@ -1,3 +1,4 @@
+/** @deprecated Use analyze-prompt-short or analyze-prompt-long via prompt-routing */
 export const ANALYZE_SYSTEM_PROMPT = `You analyze Hebrew messages that may come from Israeli authorities, banks, utilities, courts, or from parties impersonating them (including possible scams).
 
 OUTPUT CONTRACT (follow exactly)

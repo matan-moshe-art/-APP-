@@ -1,17 +1,28 @@
 import { NextResponse } from "next/server";
-import { SUMMARIZE_SYSTEM_PROMPT } from "@/lib/summarize-prompt";
-import { LOCAL_USER_ID } from "@/lib/billing/auth";
-import { userHasActiveSubscription } from "@/lib/billing/entitlement";
+import type { InputMode } from "@/lib/app-types";
+import {
+  createInteractionLog,
+  markInteractionFailure,
+  markInteractionSuccess,
+} from "@/lib/ai-interactions-repo";
+import {
+  limitsForMode,
+  resolveSystemPrompt,
+} from "@/lib/prompt-routing";
 import { triggerAndWaitForResult } from "@/lib/cursor-webhook-auth";
+import { resolveCursorWebhook } from "@/lib/cursor-webhook-routing";
 
-const MIN_LEN = 10;
-const MAX_LEN = 5000;
-const SUMMARIZE_WEBHOOK_URL =
-  process.env.SUMMARIZE_WEBHOOK_URL ??
-  "https://api2.cursor.sh/automations/webhook/38d045b9-ceac-4f97-8198-3e2212abe645";
-const SUMMARIZE_WEBHOOK_AUTH_TOKEN =
-  process.env.SUMMARIZE_WEBHOOK_AUTH_TOKEN?.trim() ?? "";
-
+function parseInputMode(body: unknown): InputMode {
+  if (
+    typeof body === "object" &&
+    body !== null &&
+    "inputType" in body &&
+    (body as { inputType?: unknown }).inputType === "short"
+  ) {
+    return "short";
+  }
+  return "long";
+}
 const USER_ERROR_PREFIX =
   "לא הצלחנו להשלים את הבקשה כרגע. נסו שוב בעוד רגע.";
 
@@ -96,17 +107,6 @@ function extractSummarizeResult(raw: unknown): SummarizeResult | null {
 }
 
 export async function POST(request: Request) {
-  const entitled = await userHasActiveSubscription(LOCAL_USER_ID);
-  if (!entitled) {
-    return NextResponse.json(
-      {
-        error: "subscription_required",
-        message: "כדי לקבל סיכום צריך מנוי פעיל. אפשר להפעיל במסך המנוי.",
-      },
-      { status: 402 },
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -120,10 +120,13 @@ export async function POST(request: Request) {
       : "";
 
   const trimmed = text.trim();
+  const inputMode = parseInputMode(body);
+  const { min: MIN_LEN, max: MAX_LEN } = limitsForMode(inputMode);
+  const systemPrompt = resolveSystemPrompt("summarizer", inputMode);
 
   if (!trimmed) {
     return NextResponse.json(
-      { error: "empty", message: "יש להדביק טקסט לפני הסיכום" },
+      { error: "empty", message: "הוסיפו הודעה או PDF לפני ההתחלה." },
       { status: 400 },
     );
   }
@@ -140,14 +143,25 @@ export async function POST(request: Request) {
     );
   }
 
+  const logId = await createInteractionLog({
+    feature: "summarize",
+    inputMode,
+    userMessage: trimmed,
+  });
+
+  const { url: summarizeWebhookUrl, authToken: summarizeWebhookAuthToken } =
+    resolveCursorWebhook("summarize", inputMode);
+
   const outcome = await triggerAndWaitForResult({
-    webhookUrl: SUMMARIZE_WEBHOOK_URL,
-    authToken: SUMMARIZE_WEBHOOK_AUTH_TOKEN,
-    payload: { text: trimmed, prompt: SUMMARIZE_SYSTEM_PROMPT },
+    webhookUrl: summarizeWebhookUrl,
+    authToken: summarizeWebhookAuthToken,
+    payload: { text: trimmed, prompt: systemPrompt, inputType: inputMode },
   });
 
   if (!outcome.ok) {
     console.error(`Summarize webhook failed [${outcome.errorCode}]: ${outcome.detail}`);
+    const { eventCode } = withEventCode(outcome.errorCode);
+    await markInteractionFailure(logId, eventCode);
     return NextResponse.json(
       { error: "webhook_error", ...withEventCode(outcome.errorCode) },
       { status: 502 },
@@ -156,10 +170,13 @@ export async function POST(request: Request) {
 
   const parsed = extractSummarizeResult(outcome.resultText);
   if (parsed) {
+    await markInteractionSuccess(logId, parsed);
     return NextResponse.json(parsed);
   }
 
   console.error("Could not extract summarize result from agent output:", outcome.resultText.slice(0, 500));
+  const { eventCode } = withEventCode(207);
+  await markInteractionFailure(logId, eventCode);
   return NextResponse.json(
     { error: "webhook_unrecognized_response", ...withEventCode(207) },
     { status: 502 },

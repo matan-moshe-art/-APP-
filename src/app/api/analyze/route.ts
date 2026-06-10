@@ -1,19 +1,30 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { ANALYZE_SYSTEM_PROMPT } from "@/lib/analyze-prompt";
-import { getPrisma } from "@/lib/db";
-import { LOCAL_USER_ID } from "@/lib/billing/auth";
-import { userHasActiveSubscription } from "@/lib/billing/entitlement";
+import type { InputMode } from "@/lib/app-types";
+import {
+  createInteractionLog,
+  markInteractionFailure,
+  markInteractionSuccess,
+} from "@/lib/ai-interactions-repo";
+import {
+  limitsForMode,
+  resolveSystemPrompt,
+} from "@/lib/prompt-routing";
 import { triggerAndWaitForResult } from "@/lib/cursor-webhook-auth";
+import { resolveCursorWebhook } from "@/lib/cursor-webhook-routing";
 
-const MIN_LEN = 10;
-const MAX_LEN = 5000;
+function parseInputMode(body: unknown): InputMode {
+  if (
+    typeof body === "object" &&
+    body !== null &&
+    "inputType" in body &&
+    (body as { inputType?: unknown }).inputType === "short"
+  ) {
+    return "short";
+  }
+  return "long";
+}
 const MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-const ANALYZE_WEBHOOK_URL =
-  process.env.ANALYZE_WEBHOOK_URL?.trim() ??
-  "https://api2.cursor.sh/automations/webhook/b792b886-1381-47fc-94d6-23f4f66e7d4b";
-const ANALYZE_WEBHOOK_AUTH_TOKEN =
-  process.env.ANALYZE_WEBHOOK_AUTH_TOKEN?.trim() ?? "";
 const USER_ERROR_PREFIX =
   "לא הצלחנו להשלים את הבקשה כרגע. נסו שוב בעוד רגע.";
 
@@ -98,17 +109,6 @@ function extractAnalysisResult(raw: unknown): AnalysisResult | null {
 }
 
 export async function POST(request: Request) {
-  const entitled = await userHasActiveSubscription(LOCAL_USER_ID);
-  if (!entitled) {
-    return NextResponse.json(
-      {
-        error: "subscription_required",
-        message: "כדי לקבל ניתוח צריך מנוי פעיל. אפשר להפעיל במסך המנוי.",
-      },
-      { status: 402 },
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -122,10 +122,13 @@ export async function POST(request: Request) {
       : "";
 
   const trimmed = text.trim();
+  const inputMode = parseInputMode(body);
+  const { min: MIN_LEN, max: MAX_LEN } = limitsForMode(inputMode);
+  const systemPrompt = resolveSystemPrompt("scam", inputMode);
 
   if (!trimmed) {
     return NextResponse.json(
-      { error: "empty", message: "יש להדביק הודעה לפני הניתוח" },
+      { error: "empty", message: "הוסיפו הודעה או PDF לפני ההתחלה." },
       { status: 400 },
     );
   }
@@ -142,39 +145,27 @@ export async function POST(request: Request) {
     );
   }
 
+  const logId = await createInteractionLog({
+    feature: "analyze",
+    inputMode,
+    userMessage: trimmed,
+  });
+
+  const { url: analyzeWebhookUrl, authToken: analyzeWebhookAuthToken } =
+    resolveCursorWebhook("analyze", inputMode);
+
   // --- Try Cursor automation webhook first ---
-  if (ANALYZE_WEBHOOK_URL && ANALYZE_WEBHOOK_AUTH_TOKEN) {
+  if (analyzeWebhookUrl && analyzeWebhookAuthToken) {
     const outcome = await triggerAndWaitForResult({
-      webhookUrl: ANALYZE_WEBHOOK_URL,
-      authToken: ANALYZE_WEBHOOK_AUTH_TOKEN,
-      payload: {
-        text: trimmed,
-        prompt: ANALYZE_SYSTEM_PROMPT,
-        message: trimmed,
-      },
+      webhookUrl: analyzeWebhookUrl,
+      authToken: analyzeWebhookAuthToken,
+      payload: { text: trimmed, prompt: systemPrompt, inputType: inputMode },
     });
 
     if (outcome.ok) {
       const result = extractAnalysisResult(outcome.resultText);
       if (result) {
-        const prisma = getPrisma();
-        if (prisma) {
-          try {
-            await prisma.analysis.create({
-              data: {
-                inputText: trimmed,
-                resultMeaning: result.meaning,
-                resultUrgency: result.urgency,
-                resultAction: result.action,
-                resultSuspicious: result.suspicious,
-                modelUsed: "cursor-automation",
-                durationMs: 0,
-              },
-            });
-          } catch (dbErr) {
-            console.error("Failed to save analysis:", dbErr);
-          }
-        }
+        await markInteractionSuccess(logId, result);
         return NextResponse.json(result);
       }
       console.error("Could not extract analysis from agent output:", outcome.resultText.slice(0, 500));
@@ -185,6 +176,8 @@ export async function POST(request: Request) {
     // Fall through to OpenAI if webhook result was unusable
     if (!process.env.OPENAI_API_KEY) {
       const code = outcome.ok ? 207 : outcome.errorCode;
+      const { eventCode } = withEventCode(code);
+      await markInteractionFailure(logId, eventCode);
       return NextResponse.json(
         { error: "webhook_error", ...withEventCode(code) },
         { status: 502 },
@@ -194,20 +187,21 @@ export async function POST(request: Request) {
 
   // --- Fallback: direct OpenAI ---
   if (!process.env.OPENAI_API_KEY) {
+    const { eventCode } = withEventCode(102);
+    await markInteractionFailure(logId, eventCode);
     return NextResponse.json(
       { error: "server_config", ...withEventCode(102) },
       { status: 500 },
     );
   }
 
-  const started = Date.now();
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   try {
     const completion = await openai.chat.completions.create({
       model: MODEL,
       messages: [
-        { role: "system", content: ANALYZE_SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content: `נתח את ההודעה הבאה:\n\n${trimmed}` },
       ],
       response_format: { type: "json_object" },
@@ -216,6 +210,8 @@ export async function POST(request: Request) {
 
     const raw = completion.choices[0]?.message?.content;
     if (!raw) {
+      const { eventCode } = withEventCode(301);
+      await markInteractionFailure(logId, eventCode);
       return NextResponse.json(
         { error: "ai_empty", ...withEventCode(301) },
         { status: 502 },
@@ -226,6 +222,8 @@ export async function POST(request: Request) {
     try {
       parsed = JSON.parse(raw);
     } catch {
+      const { eventCode } = withEventCode(302);
+      await markInteractionFailure(logId, eventCode);
       return NextResponse.json(
         { error: "ai_parse", ...withEventCode(302) },
         { status: 502 },
@@ -238,6 +236,8 @@ export async function POST(request: Request) {
       Array.isArray(parsed) ||
       !isAnalyzeResult(parsed as Record<string, unknown>)
     ) {
+      const { eventCode } = withEventCode(303);
+      await markInteractionFailure(logId, eventCode);
       return NextResponse.json(
         { error: "ai_shape", ...withEventCode(303) },
         { status: 502 },
@@ -251,30 +251,12 @@ export async function POST(request: Request) {
       suspicious: (parsed as AnalysisResult).suspicious.trim(),
     };
 
-    const durationMs = Date.now() - started;
-
-    const prisma = getPrisma();
-    if (prisma) {
-      try {
-        await prisma.analysis.create({
-          data: {
-            inputText: trimmed,
-            resultMeaning: result.meaning,
-            resultUrgency: result.urgency,
-            resultAction: result.action,
-            resultSuspicious: result.suspicious,
-            modelUsed: MODEL,
-            durationMs,
-          },
-        });
-      } catch (dbErr) {
-        console.error("Failed to save analysis:", dbErr);
-      }
-    }
-
+    await markInteractionSuccess(logId, result);
     return NextResponse.json(result);
   } catch (err: unknown) {
     console.error("OpenAI error:", err);
+    const { eventCode } = withEventCode(304);
+    await markInteractionFailure(logId, eventCode);
     return NextResponse.json(
       { error: "upstream", ...withEventCode(304) },
       { status: 502 },

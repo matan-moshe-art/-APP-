@@ -1,8 +1,10 @@
-# מנתח הודעות רשמיות (Hebrew Official Message Analyzer), V2
+# מזהה פישינג בעברית (Hebrew Phishing Analyzer)
 
-Single-page Hebrew RTL app: paste an official message, get four fixed sections (meaning, urgency, actions, suspicious signals).
+Single-page Hebrew RTL app: paste a suspicious message, get four fixed sections (meaning, urgency, actions, suspicious signals).
 
-Includes Supabase magic-link auth and a non-Stripe billing foundation (Lemon Squeezy by default) with checkout, webhook sync, and subscription gating hooks.
+Includes a second tool at `/summarize` for breaking down complex messages (topic, urgency, actions, recommendations).
+
+**Localhost only** — no login or billing. Uses Cursor automation webhooks, optional OpenAI fallback, and optional Postgres logging for AI training datasets.
 
 ## Setup
 
@@ -12,37 +14,30 @@ Includes Supabase magic-link auth and a non-Stripe billing foundation (Lemon Squ
    cp .env.example .env
    ```
 
-2. Set `OPENAI_API_KEY` in `.env` if you want an inline AI response.
+2. Set Cursor webhook URL + auth per feature and input length (see `.env.example`):
+   - `ANALYZE_WEBHOOK_*_SHORT` / `ANALYZE_WEBHOOK_*_LONG` for phishing analysis
+   - `SUMMARIZE_WEBHOOK_*_SHORT` / `SUMMARIZE_WEBHOOK_*_LONG` for summarize
 
-3. Optional: set `ANALYZE_WEBHOOK_URL` in `.env` to forward requests to your webhook endpoint (e.g. n8n production URL). The app calls the webhook with HTTP `POST` and JSON body; it also mirrors fields on the query string. If the webhook requires Header Auth (n8n Webhook node → Authentication: Header Auth), set `ANALYZE_WEBHOOK_AUTH_HEADER_NAME` and `ANALYZE_WEBHOOK_AUTH_HEADER_VALUE`.
+3. Optional: set `POSTGRES_URL` and run the migration to persist user messages and AI responses:
 
-4. Set Postgres `DATABASE_URL` and `DIRECT_URL` (see `.env.example`) — typically Supabase Session Pooler strings — to enable Prisma and analysis logging.
+   ```bash
+   psql "$POSTGRES_URL" -f db/migrations/001_ai_interactions.sql
+   ```
 
-5. Optional billing setup (non-Stripe, Lemon Squeezy):
-   - `BILLING_PROVIDER=lemonsqueezy`
-   - `NEXT_PUBLIC_APP_URL=http://localhost:3000`
-   - `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_VARIANT_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`
-   - Optional `LEMONSQUEEZY_CUSTOMER_PORTAL_URL` for self-service management
-   - `/api/analyze` requires an active subscription by default
-   - Optional `BILLING_ZERO_PRICE_TEST_MODE=true` (default) to activate a local 0-shekel test subscription from `/billing`
+   Every analyze/summarize request is logged to the `ai_interactions` table (user message + AI response + status). If Postgres is unavailable, the app still works — logging failures are non-fatal.
 
-6. Install and migrate:
+4. In [cursor.com/automations](https://cursor.com/automations), configure the **phishing** automation like the **summarize** one: webhook trigger only, **no** git/repo tools, instructions that return JSON only (no file edits). See [docs/cursor-automation-analyze.md](docs/cursor-automation-analyze.md).
+
+5. Optional: set `OPENAI_API_KEY` for analyze fallback when the webhook returns unusable output.
+
+6. Install and run:
 
    ```bash
    npm install
-   npx prisma migrate deploy
    npm run dev
    ```
 
 Open [http://localhost:3000](http://localhost:3000).
-
-### Billing endpoints
-
-- `POST /api/billing/checkout`: creates provider checkout session URL.
-- `POST /api/billing/portal`: returns customer portal URL (if configured).
-- `POST /api/billing/webhook`: webhook receiver (signature-verified).
-- `GET /api/billing/subscription`: returns current user entitlement state.
-- `/billing`: authenticated customer billing page.
 
 ## Build
 
@@ -51,22 +46,11 @@ npm run build
 npm start
 ```
 
-`npm run build` runs `prisma generate` first.
-
-## Deploy (Vercel)
-
-1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
-2. Add **Environment Variables**:
-   - `OPENAI_API_KEY` (required)
-   - Optional: `ANALYZE_WEBHOOK_URL` (+ optional `ANALYZE_WEBHOOK_AUTH_HEADER_NAME` / `ANALYZE_WEBHOOK_AUTH_HEADER_VALUE` for Header Auth)
-   - Optional: `OPENAI_MODEL` (default `gpt-4o-mini`)
-   - Optional: For request logging, set `DATABASE_URL` (pooler) and `DIRECT_URL` (Prisma migrations) from your Supabase (or other Postgres) dashboard. Without them, analyses are not stored (the API still works).
-
 ## Stack
 
 - Next.js (App Router), TypeScript, Tailwind CSS v4
-- OpenAI Chat Completions (JSON mode)
-- Prisma + PostgreSQL (Supabase recommended): pooler URL for runtime, `directUrl` for migrations
+- Cursor automation webhooks + optional OpenAI Chat Completions (JSON mode)
+- Optional Postgres (`pg`) for `ai_interactions` training logs
 
 ## Disclaimer
 

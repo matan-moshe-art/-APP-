@@ -10,9 +10,9 @@ const heebo = Heebo({
 });
 
 export const metadata: Metadata = {
-  title: "מזהה פישינג - הגנה מפני סקאם בעברית",
+  title: "הבנת הודעות ובדיקת הונאה",
   description:
-    "הדביקו SMS, מייל או הודעה חשודה ונבדוק האם זה פישינג, מה רמת הסיכון ומה לעשות הלאה",
+    "סיכום הודעות ובדיקת סיכון פישינג בעברית — הודעות קצרות, מסמכים ארוכים ו-PDF",
 };
 
 export default function RootLayout({
@@ -25,11 +25,8 @@ export default function RootLayout({
       <body className="bg-mesh-dark min-h-full font-sans text-zinc-100 antialiased">
         <Suspense
           fallback={
-            <div className="flex min-h-full items-center justify-center p-8">
-              <div
-                className="size-10 animate-pulse rounded-full bg-gradient-to-br from-emerald-600 to-green-600 opacity-80"
-                aria-hidden
-              />
+            <div className="flex min-h-full items-center justify-center p-8 text-sm text-zinc-500">
+              טוען...
             </div>
           }
         >
