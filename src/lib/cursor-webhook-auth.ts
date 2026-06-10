@@ -14,6 +14,7 @@
 const CURSOR_API_BASE = "https://api.cursor.com";
 const POLL_INTERVAL_MS = 3_000;
 const MAX_POLL_MS = 180_000;
+const MAX_CONSECUTIVE_POLL_ERRORS = 5;
 
 export function buildCursorWebhookAuthorization(
   routeToken: string | undefined,
@@ -23,16 +24,6 @@ export function buildCursorWebhookAuthorization(
   if (!raw) return null;
   if (/^bearer\s+/i.test(raw)) return raw;
   return `Bearer ${raw}`;
-}
-
-export function applyCustomWebhookHeader(
-  headers: Record<string, string>,
-  headerName: string | undefined,
-  headerValue: string | undefined,
-): void {
-  const name = headerName?.trim() ?? "";
-  const value = headerValue?.trim() ?? "";
-  if (name && value) headers[name] = value;
 }
 
 interface WebhookTriggerResponse {
@@ -46,6 +37,24 @@ interface RunResult {
   status: string;
   result?: string;
   durationMs?: number;
+}
+
+function mergeAbortSignals(
+  a?: AbortSignal,
+  b?: AbortSignal,
+): AbortSignal | undefined {
+  if (!a && !b) return undefined;
+  if (!a) return b;
+  if (!b) return a;
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (a.aborted || b.aborted) {
+    controller.abort();
+    return controller.signal;
+  }
+  a.addEventListener("abort", onAbort);
+  b.addEventListener("abort", onAbort);
+  return controller.signal;
 }
 
 /**
@@ -63,6 +72,8 @@ export async function triggerAndWaitForResult(opts: {
     return { ok: false, errorCode: 102, detail: "No auth token configured" };
   }
 
+  const requestSignal = mergeAbortSignals(opts.signal, AbortSignal.timeout(30_000));
+
   // --- Step 1: trigger the webhook ---
   let triggerRes: Response;
   try {
@@ -74,9 +85,12 @@ export async function triggerAndWaitForResult(opts: {
         Accept: "application/json",
       },
       body: JSON.stringify(opts.payload),
-      signal: AbortSignal.timeout(30_000),
+      signal: requestSignal,
     });
   } catch (err) {
+    if (opts.signal?.aborted) {
+      return { ok: false, errorCode: 203, detail: "Aborted by caller" };
+    }
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("ENOTFOUND") || msg.includes("ECONNREFUSED"))
       return { ok: false, errorCode: 204, detail: `Network error: ${msg}` };
@@ -99,6 +113,10 @@ export async function triggerAndWaitForResult(opts: {
     return { ok: false, errorCode: 207, detail: "Webhook response is not JSON" };
   }
 
+  if (trigger.success === false) {
+    return { ok: false, errorCode: 207, detail: "Webhook trigger returned success: false" };
+  }
+
   if (!trigger.backgroundComposerId) {
     return { ok: false, errorCode: 207, detail: "Webhook response missing backgroundComposerId" };
   }
@@ -109,6 +127,8 @@ export async function triggerAndWaitForResult(opts: {
   const deadline = Date.now() + MAX_POLL_MS;
 
   let runId: string | null = null;
+  let consecutiveErrors = 0;
+
   while (Date.now() < deadline) {
     if (opts.signal?.aborted) {
       return { ok: false, errorCode: 203, detail: "Aborted by caller" };
@@ -119,7 +139,7 @@ export async function triggerAndWaitForResult(opts: {
       if (!runId) {
         const agentRes = await fetch(`${CURSOR_API_BASE}/v1/agents/${agentId}`, {
           headers: { Authorization: authorization },
-          signal: AbortSignal.timeout(10_000),
+          signal: mergeAbortSignals(opts.signal, AbortSignal.timeout(10_000)),
         });
         if (agentRes.ok) {
           const agentData = await agentRes.json() as { latestRunId?: string };
@@ -133,20 +153,40 @@ export async function triggerAndWaitForResult(opts: {
       if (runId) {
         const runRes = await fetch(`${CURSOR_API_BASE}/v1/agents/${agentId}/runs/${runId}`, {
           headers: { Authorization: authorization },
-          signal: AbortSignal.timeout(10_000),
+          signal: mergeAbortSignals(opts.signal, AbortSignal.timeout(10_000)),
         });
         if (runRes.ok) {
           const run = await runRes.json() as RunResult;
           if (run.status === "FINISHED") {
-            return { ok: true, resultText: run.result ?? "" };
+            const resultText = run.result?.trim() ?? "";
+            if (!resultText) {
+              return { ok: false, errorCode: 207, detail: "Agent finished with empty result" };
+            }
+            return { ok: true, resultText };
           }
           if (run.status === "ERROR" || run.status === "CANCELLED" || run.status === "EXPIRED") {
             return { ok: false, errorCode: 206, detail: `Agent run ended with status: ${run.status}` };
           }
         }
       }
-    } catch {
-      // Transient network error during polling — keep trying
+
+      consecutiveErrors = 0;
+    } catch (err) {
+      consecutiveErrors++;
+      console.error(
+        "[cursor-webhook-auth] poll error:",
+        err instanceof Error ? err.message : err,
+      );
+      if (opts.signal?.aborted) {
+        return { ok: false, errorCode: 203, detail: "Aborted by caller" };
+      }
+      if (consecutiveErrors >= MAX_CONSECUTIVE_POLL_ERRORS) {
+        return {
+          ok: false,
+          errorCode: 204,
+          detail: "Too many consecutive polling errors",
+        };
+      }
     }
 
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));

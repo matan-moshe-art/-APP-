@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-06-07 16:35:00 +03:00
+Last updated: 2026-06-10 15:50:00 +03:00
 
 ## Durable Preferences
 
@@ -20,6 +20,7 @@ Last updated: 2026-06-07 16:35:00 +03:00
 
 ## Durable Context
 
+- 2026-06-10 15:50:00 +03:00: Full app reshape completed: removed dead n8n callback/status/pending-store, deprecated monolith prompts, unused public SVGs; added `ai-route-helpers.ts`, `result-validators.ts`, hardened `cursor-webhook-auth.ts` (env-only webhooks, no hardcoded UUIDs); split UI into `useAnalysisFlow` + small components; unified error UX; refreshed ERROR_CODES/README/.env.example.
 - 2026-06-07 16:35:00 +03:00: Postgres AI logging end-to-end confirmed working on localhost (`postgres` DB, `ai_interactions` table, pgAdmin on server `APP TEST NM1`). User manages `.env.local` / DB access themselves; app UI does not display logged messages.
 
 - 2026-06-04 19:00:00 +03:00: Second project Agent Skill: `.agents/skills/prompt-craft` — write/refine prompts; examples in `PROMPT_EXAMPLES.md`; deliver example outputs after each draft; tighten analyze/summarize style (contract-first, no duplicate phases).
@@ -33,6 +34,7 @@ Last updated: 2026-06-07 16:35:00 +03:00
 
 ## Recent Requests
 
+- 2026-06-10 15:50:00 +03:00: User requested full app reshape plan implementation (cleanup, dedupe, UI split, docs refresh) without editing the plan file.
 - 2026-06-07 16:35:00 +03:00: User confirmed Postgres AI logging works end-to-end; asked to commit to memory.
 - 2026-06-07 16:00:00 +03:00: User hit AN-207 on short analyze ("give me 3000$"); asked prompt-craft rewrite so webhook always returns parseable JSON + good/bad output examples.
 - 2026-06-07 14:30:00 +03:00: User connected Postgres successfully; requested plan + implementation to persist every user message and AI response to database for AI training (store all messages by default, user + AI response).
@@ -119,6 +121,7 @@ Last updated: 2026-06-07 16:35:00 +03:00
 
 ## Recent Outputs
 
+- 2026-06-10 15:50:00 +03:00: Implemented full app reshape: baseline commit `46e3005`, then dead-code removal, shared API helpers, webhook hardening, `AnalysisApp` split into hook + 10 components, docs refresh; `npm run build` + `npm run lint` pass.
 - 2026-06-07 16:35:00 +03:00: Walked user through Postgres setup (SQL Shell/pgAdmin/PowerShell); `POSTGRES_URL` in `.env.local`; verified `ai_interactions` receives analyze rows; clarified app has no DB viewer — pgAdmin Query Tool / View/Edit Data only.
 - 2026-06-07 16:00:00 +03:00: Hardened `analyze-prompt-short.ts` (headless API, any-language input, anti–file-creation); updated `docs/cursor-automation-analyze.md` (AN-207 table); added analyze short examples + bad outputs to `PROMPT_EXAMPLES.md`.
 - 2026-06-07 14:35:00 +03:00: Implemented Postgres AI interaction logging: `db/migrations/001_ai_interactions.sql`, `src/lib/db-postgres.ts`, `src/lib/ai-interactions-repo.ts`; instrumented `/api/analyze` and `/api/summarize`; updated footer disclaimer, README, `.env.example`; added `pg` dependency.

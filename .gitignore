@@ -38,7 +38,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
+.cursor/debug-*.log
 
 # sqlite local db
 *.db

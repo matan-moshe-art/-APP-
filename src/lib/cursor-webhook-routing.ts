@@ -2,21 +2,6 @@ import type { InputMode } from "@/lib/app-types";
 
 export type WebhookFeature = "analyze" | "summarize";
 
-const DEFAULT_WEBHOOK_URL: Record<WebhookFeature, Record<InputMode, string>> = {
-  summarize: {
-    short:
-      "https://api2.cursor.sh/automations/webhook/38d045b9-ceac-4f97-8198-3e2212abe645",
-    long:
-      "https://api2.cursor.sh/automations/webhook/3d20c054-2e36-40df-bc77-3c0519043cd0",
-  },
-  analyze: {
-    short:
-      "https://api2.cursor.sh/automations/webhook/b792b886-1381-47fc-94d6-23f4f66e7d4b",
-    long:
-      "https://api2.cursor.sh/automations/webhook/c678e847-d155-47ac-81bc-b1e97cb3f85c",
-  },
-};
-
 function readEnv(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
@@ -34,12 +19,18 @@ export function resolveCursorWebhook(
 
   const url =
     readEnv(`${prefix}_WEBHOOK_URL_${modeKey}`) ||
-    (mode === "short" ? readEnv(`${prefix}_WEBHOOK_URL`) : "") ||
-    DEFAULT_WEBHOOK_URL[feature][mode];
+    (mode === "short" ? readEnv(`${prefix}_WEBHOOK_URL`) : "");
 
   const authToken =
     readEnv(`${prefix}_WEBHOOK_AUTH_TOKEN_${modeKey}`) ||
     (mode === "short" ? readEnv(`${prefix}_WEBHOOK_AUTH_TOKEN`) : "");
 
   return { url, authToken };
+}
+
+export function isWebhookConfigured(config: {
+  url: string;
+  authToken: string;
+}): boolean {
+  return Boolean(config.url && config.authToken);
 }

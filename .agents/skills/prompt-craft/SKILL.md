@@ -32,8 +32,8 @@ The model should **process** input in a clear order, then **emit** in a strict s
 |--------|------|
 | `PROMPT_EXAMPLES.md` | Always—user’s golden input/output pairs |
 | `AI_MEMORY.md` → Prompt examples | If present |
-| `src/lib/analyze-prompt.ts` | Phishing / scam analyzer for this app |
-| `src/lib/summarize-prompt.ts` | Summarize feature for this app |
+| `src/lib/analyze-prompt-short.ts` / `analyze-prompt-long.ts` | Phishing / scam analyzer (short vs long/PDF) |
+| `src/lib/summarize-prompt-short.ts` / `summarize-prompt-long.ts` | Summarize feature (short vs long/PDF) |
 | User message | Which file or surface to target |
 
 If examples are missing for a **structured** prompt, still deliver the prompt, then supply **2–3 example outputs** for the user to paste into `PROMPT_EXAMPLES.md`.
@@ -119,15 +119,17 @@ Bullets: extra keys, arrays in values, questions to user, markdown wrapper, inve
 
 | Feature | File | JSON keys |
 |---------|------|-----------|
-| Phishing analyze | `src/lib/analyze-prompt.ts` | `meaning`, `urgency`, `action`, `suspicious` |
-| Summarize | `src/lib/summarize-prompt.ts` | `topic`, `urgency`, `actions`, `recommendations` |
+| Phishing analyze (short) | `src/lib/analyze-prompt-short.ts` | `meaning`, `urgency`, `action`, `suspicious` |
+| Phishing analyze (long/PDF) | `src/lib/analyze-prompt-long.ts` | same keys |
+| Summarize (short) | `src/lib/summarize-prompt-short.ts` | `topic`, `urgency`, `actions`, `recommendations` |
+| Summarize (long/PDF) | `src/lib/summarize-prompt-long.ts` | same keys |
 
 **Urgency line 1** must be exactly one of: `דחוף` / `בינוני` / `לא דחוף` (summarize) or `דחוף` / `בינוני` / `לא דחוף` (analyze uses same Hebrew labels in analyze-prompt).
 
 When improving these files:
 
-- Prefer **analyze-prompt** style: English section labels, tight field blocks, no huge demo JSON inside the string.  
-- Move few-shot demos from `summarize-prompt.ts` into `PROMPT_EXAMPLES.md`.  
+- Prefer **analyze-prompt-short/long** style: English section labels, tight field blocks, no huge demo JSON inside the string.  
+- Keep few-shot demos in `PROMPT_EXAMPLES.md`, not inside `*-prompt-*.ts` files.  
 - Align both prompts on the same **pipeline + contract-first** structure.
 
 **Webhook note:** App sends `{ text, prompt }`. Automation may add its own instructions; avoid contradicting the app contract.

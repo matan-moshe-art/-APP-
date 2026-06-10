@@ -4,7 +4,7 @@
 >
 > כל שגיאה שמוצגת למשתמש מסתיימת בקוד מהצורה `XXX-NNN` (לדוגמה `AN-201`, `SM-102`). כשמשתמש מדווח על תקלה, בקשו ממנו את הקוד שראה - הוא יצביע ישירות על המקור.
 
-האפליקציה כוללת **כלי לזיהוי פישינג בעברית** ו-**כלי לסיכום הודעות מורכבות** (עמוד `/summarize`): המשתמש מדביק טקסט, והמערכת מחזירה תשובה מובנית לפי הפרומפט.
+האפליקציה כוללת **כלי לזיהוי פישינג בעברית** ו-**כלי לסיכום הודעות מורכבות** (מסך בית יחיד ב-`/`; `/summarize` מפנה לשם): המשתמש מדביק טקסט, והמערכת מחזירה תשובה מובנית לפי הפרומפט.
 
 ---
 
@@ -21,17 +21,22 @@
 
 | קוד | מה קרה | היכן | מה לעשות |
 |-----|--------|------|----------|
-| `AN-001` | אין חיבור לאינטרנט בצד הלקוח | `src/app/page.tsx` | לוודא שהמשתמש מחובר לרשת |
-| `AN-002` | כשל ברשת בעת קריאה ל-`/api/analyze` | `src/app/page.tsx` | בעיית רשת אצל המשתמש או בעיה ב-Next.js server |
-| `AN-102` | אין הגדרת webhook ואין `OPENAI_API_KEY` | `src/app/api/analyze/route.ts` | להגדיר לפחות אחד מהשניים בסביבה |
+| `AN-001` | אין חיבור לאינטרנט בצד הלקוח | `src/hooks/useAnalysisFlow.ts` | לוודא שהמשתמש מחובר לרשת |
+| `AN-002` | כשל ברשת בעת קריאה ל-`/api/analyze` | `src/hooks/useAnalysisFlow.ts` | בעיית רשת אצל המשתמש או בעיה ב-Next.js server |
+| `AN-102` | אין webhook מוגדר ואין `OPENAI_API_KEY` | `src/app/api/analyze/route.ts` | להגדיר URL + token ל-webhook או `OPENAI_API_KEY` |
+| `AN-201` | כשל כללי בקריאה ל-webhook | `src/lib/cursor-webhook-auth.ts` | לבדוק URL, רשת, לוגים |
+| `AN-202` | אימות webhook נדחה (401/403) | `src/lib/cursor-webhook-auth.ts` | לבדוק `ANALYZE_WEBHOOK_AUTH_TOKEN_*` |
+| `AN-203` | timeout ב-polling של Cloud Agents (180s) או ביטול בקשה | `src/lib/cursor-webhook-auth.ts`, `src/hooks/useAnalysisFlow.ts` | האוטומציה לא סיימה בזמן; לבדוק אוטומציה ב-Cursor |
+| `AN-204` | שגיאת רשת בזמן polling | `src/lib/cursor-webhook-auth.ts` | DNS, חיבור, או יותר מדי שגיאות רצופות |
+| `AN-205` | webhook URL לא נמצא (404) | `src/lib/cursor-webhook-auth.ts` | לבדוק `ANALYZE_WEBHOOK_URL_*` |
+| `AN-206` | הרצת agent הסתיימה ב-ERROR/CANCELLED/EXPIRED | `src/lib/cursor-webhook-auth.ts` | לבדוק לוגים באוטומציה ב-Cursor |
 | `AN-207` | webhook הצליח אבל החזיר תשובה שלא ניתן לפרש | `src/app/api/analyze/route.ts` | לבדוק פלט האוטומציה - חייבים 4 שדות: `meaning`, `urgency`, `action`, `suspicious` |
-| `AN-208` | polling הגיע ל-timeout (5 דקות) | `src/app/page.tsx` | האוטומציה לא החזירה תשובה בזמן |
 | `AN-301` | OpenAI החזיר תשובה ריקה | `src/app/api/analyze/route.ts` | לנסות שוב; אם חוזר - לבדוק מודל ופרומפט |
 | `AN-302` | OpenAI החזיר תשובה שאינה JSON תקין | `src/app/api/analyze/route.ts` | לבדוק שהפרומפט דורש `response_format: json_object` |
-| `AN-303` | OpenAI החזיר JSON אבל בלי השדות הנדרשים | `src/app/api/analyze/route.ts` | לבדוק את הפרומפט ב-`src/lib/analyze-prompt.ts` |
+| `AN-303` | OpenAI החזיר JSON אבל בלי השדות הנדרשים | `src/app/api/analyze/route.ts` | לבדוק `src/lib/analyze-prompt-short.ts` / `analyze-prompt-long.ts` |
 | `AN-304` | חריגה כללית מ-OpenAI | `src/app/api/analyze/route.ts` | לבדוק לוגים בשרת |
-| `AN-500` | תשובה לא צפויה מהשרת בצד הלקוח | `src/app/page.tsx` | לבדוק לוגים של ה-API |
-| `AN-501` | התשובה נכנסה לזרם אבל לא תאמה לאף מבנה ידוע | `src/app/page.tsx` | באג בלקוח - שדרוג גרסה |
+| `AN-500` | תשובה לא צפויה מהשרת בצד הלקוח | `src/hooks/useAnalysisFlow.ts` | לבדוק לוגים של ה-API |
+| `AN-501` | התשובה לא תאמה למבנה ידוע | `src/hooks/useAnalysisFlow.ts` | באג בלקוח או פלט webhook לא תקין |
 
 ---
 
@@ -39,11 +44,18 @@
 
 | קוד | מה קרה | היכן | מה לעשות |
 |-----|--------|------|----------|
-| `SM-001` | אין חיבור לאינטרנט בצד הלקוח | `src/app/summarize/page.tsx` | לוודא שהמשתמש מחובר לרשת |
-| `SM-002` | כשל ברשת בעת קריאה ל-`/api/summarize` | `src/app/summarize/page.tsx` | בעיית רשת אצל המשתמש או בעיה ב-Next.js server |
+| `SM-001` | אין חיבור לאינטרנט בצד הלקוח | `src/hooks/useAnalysisFlow.ts` | לוודא שהמשתמש מחובר לרשת |
+| `SM-002` | כשל ברשת בעת קריאה ל-`/api/summarize` | `src/hooks/useAnalysisFlow.ts` | בעיית רשת אצל המשתמש או בעיה ב-Next.js server |
+| `SM-102` | אין webhook מוגדר (URL או token חסר) | `src/app/api/summarize/route.ts` | להגדיר `SUMMARIZE_WEBHOOK_URL_*` + `SUMMARIZE_WEBHOOK_AUTH_TOKEN_*` |
+| `SM-201` | כשל כללי בקריאה ל-webhook | `src/lib/cursor-webhook-auth.ts` | לבדוק URL, רשת, לוגים |
+| `SM-202` | אימות webhook נדחה (401/403) | `src/lib/cursor-webhook-auth.ts` | לבדוק `SUMMARIZE_WEBHOOK_AUTH_TOKEN_*` |
+| `SM-203` | timeout ב-polling של Cloud Agents (180s) או ביטול בקשה | `src/lib/cursor-webhook-auth.ts`, `src/hooks/useAnalysisFlow.ts` | האוטומציה לא סיימה בזמן |
+| `SM-204` | שגיאת רשת בזמן polling | `src/lib/cursor-webhook-auth.ts` | DNS, חיבור, או יותר מדי שגיאות רצופות |
+| `SM-205` | webhook URL לא נמצא (404) | `src/lib/cursor-webhook-auth.ts` | לבדוק `SUMMARIZE_WEBHOOK_URL_*` |
+| `SM-206` | הרצת agent הסתיימה ב-ERROR/CANCELLED/EXPIRED | `src/lib/cursor-webhook-auth.ts` | לבדוק לוגים באוטומציה ב-Cursor |
 | `SM-207` | webhook החזיר תשובה שלא ניתן לפרש | `src/app/api/summarize/route.ts` | לבדוק פלט האוטומציה - 4 שדות: `topic`, `urgency`, `actions`, `recommendations` |
-| `SM-500` | תשובה לא צפויה מהשרת בצד הלקוח | `src/app/summarize/page.tsx` | לבדוק לוגים של ה-API |
-| `SM-501` | התשובה נכנסה לזרם אבל לא תאמה לאף מבנה ידוע | `src/app/summarize/page.tsx` | באג בלקוח - שדרוג גרסה |
+| `SM-500` | תשובה לא צפויה מהשרת בצד הלקוח | `src/hooks/useAnalysisFlow.ts` | לבדוק לוגים של ה-API |
+| `SM-501` | התשובה לא תאמה למבנה ידוע | `src/hooks/useAnalysisFlow.ts` | באג בלקוח או פלט webhook לא תקין |
 
 ---
 
@@ -64,4 +76,12 @@
 
 ## הערה על פרטיות
 
-ההודעות שמשתמשים מדביקים לבדיקת פישינג **לא נשמרות** באופן קבוע (האפליקציה מציינת זאת ב-footer).
+ההודעות והתשובות של המשתמשים **נשמרות ב-Postgres** (טבלת `ai_interactions`) כש-`POSTGRES_URL` מוגדר — לשיפור המודל. האפליקציה מציינת זאת ב-footer. אין מציג נתונים בתוך האפליקציה; לצפייה השתמשו ב-pgAdmin.
+
+לניקוי שורות שנתקעו ב-`status='started'` (למשל אחרי קריסת שרת):
+
+```sql
+UPDATE ai_interactions
+SET status = 'failed', error_code = 'STUCK-STARTED', completed_at = NOW()
+WHERE status = 'started' AND created_at < NOW() - INTERVAL '30 minutes';
+```

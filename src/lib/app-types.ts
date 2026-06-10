@@ -25,14 +25,32 @@ export function isScamResult(
   feature: SelectedFeature,
   result: AppResult,
 ): result is ScamResult {
-  return feature === "scam" && "meaning" in result;
+  if (feature !== "scam") return false;
+  return (
+    "meaning" in result &&
+    "action" in result &&
+    "suspicious" in result &&
+    typeof result.meaning === "string" &&
+    typeof result.urgency === "string" &&
+    typeof result.action === "string" &&
+    typeof result.suspicious === "string"
+  );
 }
 
 export function isSummarizeResult(
   feature: SelectedFeature,
   result: AppResult,
 ): result is SummarizeResult {
-  return feature === "summarizer" && "topic" in result;
+  if (feature !== "summarizer") return false;
+  return (
+    "topic" in result &&
+    "actions" in result &&
+    "recommendations" in result &&
+    typeof result.topic === "string" &&
+    typeof result.urgency === "string" &&
+    typeof result.actions === "string" &&
+    typeof result.recommendations === "string"
+  );
 }
 
 export function inputModeFromSelection(

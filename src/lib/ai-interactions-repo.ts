@@ -80,3 +80,22 @@ export async function markInteractionFailure(
     );
   });
 }
+
+/** Mark rows left in `started` (e.g. after a crash) as failed. Safe to call on startup. */
+export async function markStuckInteractionsFailed(): Promise<number> {
+  const db = getPostgresPool();
+  if (!db) return 0;
+
+  const result = await safeQuery("markStuckInteractionsFailed", async () => {
+    return db.query(
+      `UPDATE ai_interactions
+       SET status = 'failed',
+           error_code = COALESCE(error_code, 'STUCK-STARTED'),
+           completed_at = NOW()
+       WHERE status = 'started'
+         AND created_at < NOW() - INTERVAL '30 minutes'`,
+    );
+  });
+
+  return result?.rowCount ?? 0;
+}
