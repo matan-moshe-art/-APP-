@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-06-10 15:50:00 +03:00
+Last updated: 2026-06-13 12:00:00 +03:00
 
 ## Durable Preferences
 
@@ -34,6 +34,7 @@ Last updated: 2026-06-10 15:50:00 +03:00
 
 ## Recent Requests
 
+- 2026-06-13 12:00:00 +03:00: User requested pushing all local updates to GitHub repo `matan-moshe-art/-APP-`.
 - 2026-06-10 15:50:00 +03:00: User requested full app reshape plan implementation (cleanup, dedupe, UI split, docs refresh) without editing the plan file.
 - 2026-06-07 16:35:00 +03:00: User confirmed Postgres AI logging works end-to-end; asked to commit to memory.
 - 2026-06-07 16:00:00 +03:00: User hit AN-207 on short analyze ("give me 3000$"); asked prompt-craft rewrite so webhook always returns parseable JSON + good/bad output examples.
@@ -121,6 +122,7 @@ Last updated: 2026-06-10 15:50:00 +03:00
 
 ## Recent Outputs
 
+- 2026-06-13 12:00:00 +03:00: Pushed `master` to GitHub `matan-moshe-art/-APP-`: commits `46e3005` (baseline before reshape) and `92767ed` (full app reshape); left local `postgresConn.session.sql` untracked.
 - 2026-06-10 15:50:00 +03:00: Implemented full app reshape: baseline commit `46e3005`, then dead-code removal, shared API helpers, webhook hardening, `AnalysisApp` split into hook + 10 components, docs refresh; `npm run build` + `npm run lint` pass.
 - 2026-06-07 16:35:00 +03:00: Walked user through Postgres setup (SQL Shell/pgAdmin/PowerShell); `POSTGRES_URL` in `.env.local`; verified `ai_interactions` receives analyze rows; clarified app has no DB viewer — pgAdmin Query Tool / View/Edit Data only.
 - 2026-06-07 16:00:00 +03:00: Hardened `analyze-prompt-short.ts` (headless API, any-language input, anti–file-creation); updated `docs/cursor-automation-analyze.md` (AN-207 table); added analyze short examples + bad outputs to `PROMPT_EXAMPLES.md`.
