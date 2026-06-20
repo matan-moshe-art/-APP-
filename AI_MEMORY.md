@@ -1,6 +1,6 @@
 # AI Memory
 
-Last updated: 2026-06-13 12:00:00 +03:00
+Last updated: 2026-06-20 16:00:00 +03:00
 
 ## Durable Preferences
 
@@ -17,6 +17,7 @@ Last updated: 2026-06-13 12:00:00 +03:00
 - Prompt writing: use `.agents/skills/prompt-craft`; contract-first + internal processing pipeline; keep few-shot examples in `PROMPT_EXAMPLES.md` (not bloated inside `*-prompt.ts`); after drafting a prompt, agent supplies 2–3 example outputs for user to paste into that file. One intake question per turn when unclear.
 - AI training logs (2026-06-07): Postgres via `POSTGRES_URL` in `.env.local` (user sets password themselves — agents must not read/store DB credentials); database `postgres`, table `public.ai_interactions`; stores user message + AI response for every analyze/summarize request; migration `db/migrations/001_ai_interactions.sql`; logging is non-fatal if DB unavailable; **no in-app viewer** — browse in pgAdmin (View/Edit Data or `SELECT * FROM ai_interactions`) only.
 - Postgres logging verified working (2026-06-07): user created table via SQL Shell/pgAdmin; `POSTGRES_URL` wired; analyze requests write rows (`feature`, `input_mode`, `user_message`, `ai_response`, `status`).
+- Docker localhost (2026-06-20): `Dockerfile` + `docker-compose.yml` (app + Postgres). Cross-platform command: `docker compose up --build` → http://localhost:3000. UI runs without `.env.local`; analyze/summarize need Cursor webhook tokens in `.env.local`. Compose overrides `POSTGRES_URL` to `postgresql://app:app@postgres:5432/hebrew_analyzer`; migration auto-runs on first Postgres start.
 
 ## Durable Context
 

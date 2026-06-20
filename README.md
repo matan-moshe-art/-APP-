@@ -40,6 +40,33 @@ Single-page Hebrew RTL app at `/`: choose **summarize** or **phishing check**, t
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Docker (Windows, macOS, Linux)
+
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose).
+
+**No tokens or `.env.local` required** to open the app UI. Analyze/summarize need Cursor webhooks later (see Setup above).
+
+1. Clone and enter the repo (folder name starts with `-`, so use `./`):
+
+   ```bash
+   git clone https://github.com/matan-moshe-art/-APP-.git
+   cd ./-APP-
+   ```
+
+2. Start app + Postgres:
+
+   ```bash
+   docker compose up --build
+   ```
+
+3. Open [http://localhost:3000](http://localhost:3000).
+
+Optional: copy `.env.example` to `.env.local` only when you want analyze/summarize API calls to work (`cp .env.example .env.local` on macOS/Linux).
+
+Postgres runs in Docker with the `ai_interactions` table created automatically. The app container uses `POSTGRES_URL=postgresql://app:app@postgres:5432/hebrew_analyzer` (overrides any localhost URL in `.env.local`).
+
+Stop: `Ctrl+C`, then `docker compose down`. Remove DB volume: `docker compose down -v`.
+
 ## Build
 
 ```bash
