@@ -1,0 +1,25 @@
+---
+description: Keep project changes focused, scoped, and verifiable
+alwaysApply: true
+-----------------
+
+# Change Boundary
+
+Before changing files, identify the smallest set of files needed for the task.
+
+Do not edit unrelated files.
+
+Do not create new files unless they clearly improve the current task.
+
+Do not install new dependencies unless the task truly requires them.
+
+If the requested change starts becoming larger than expected, stop and explain before continuing.
+
+After changing files, report:
+
+* files changed
+* what changed
+* what was verified
+* what was not verified
+
+Do not claim tests, build, browser behavior, or database behavior were verified unless they were actually checked.

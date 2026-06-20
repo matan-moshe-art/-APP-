@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+At the start of every conversation, task, or agent session, always read AI_MEMORY.md before doing substantive work.
+
+Use AI_MEMORY.md as the project’s durable memory for context, progress, decisions, verification, and meaningful completed work.
+
+If meaningful project changes happen, update AI_MEMORY.md every time, using the format inside the Write All Meaningful Changes Here section.
+
+Meaningful changes include code changes, doc changes, skill changes, rule changes, database/setup changes, important bug fixes, important verification results, durable decisions, confirmed project facts, or important user constraints.
+
+Keep memory updates short, factual, and useful.
+
+Never store secrets, passwords, tokens, API keys, private keys, full database URLs, or private company/customer data.
+
+After updating memory, tell the user:
+
+Memory updated: <timestamp>
+
+Make sure the timestamp matches the Last updated field in AI_MEMORY.md.

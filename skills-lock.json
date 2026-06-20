@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "app-design": {
+      "path": ".agents/skills/app-design"
+    },
+    "prompt-craft": {
+      "path": ".agents/skills/prompt-craft"
+    }
+  }
+}

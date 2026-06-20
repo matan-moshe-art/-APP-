@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --background: #060a08;
+  --foreground: #f4f4f5;
+  --accent-soft: rgba(22, 163, 74, 0.12);
+  --card: rgba(14, 22, 18, 0.85);
+  --border: rgba(113, 113, 122, 0.2);
+}
+
+@theme inline {
+  --font-sans: var(--font-heebo), system-ui, "Segoe UI", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.bg-mesh-dark {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -8%, rgba(22, 163, 74, 0.08) 0%, transparent 55%),
+    var(--background);
+}
+
+.btn-primary {
+  background: #15803d;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #16a34a;
+}
+
+.btn-primary:active:not(:disabled) {
+  background: #166534;
+}
+
+.btn-ghost {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(63, 63, 70, 0.35);
+}
+
+textarea {
+  transition: border-color 0.2s ease;
+}
+
+textarea:focus {
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}

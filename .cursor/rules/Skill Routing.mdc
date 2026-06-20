@@ -1,0 +1,24 @@
+---
+description: Route tasks to the correct project skill
+alwaysApply: true
+-----------------
+
+# Skill Routing
+
+Before doing project work, check whether an existing skill fits the task.
+
+If a skill might fit, first read its matching overview file inside `.cursor/skills/` to understand the purpose of the skill and when it should be used.
+
+After reading the overview, open the full skill file only if the task actually needs that skill’s detailed workflow.
+
+Use:
+
+* `Frontend-Design-Overview` first, then `Frontend-Design` for visual design, layout, UI polish, colors, spacing, and component appearance.
+* `planning-and-task-breakdown-Overview` first, then `planning-and-task-breakdown-skill` for breaking work into steps before implementation.
+* `Test-Driven-Development-(TDD)-Overview` first, then `Test-Driven-Development-(TDD).MD` for test-first work, bug reproduction, and behavior verification.
+* `database-design` for PostgreSQL schema, tables, relationships, constraints, indexes, and pgAdmin 4 database design.
+* `Everyday Code Writing Overview` first, then `Everyday Code Writing` for small focused code changes, small bug fixes, and one-file or few-file edits.
+
+Do not duplicate a skill’s job inside this rule.
+
+If no skill fits, use normal project reasoning and keep the work small.

@@ -1,0 +1,188 @@
+## PostgreSQL Requirement
+
+This project uses PostgreSQL, managed through pgAdmin 4.
+
+Do not choose SQLite, browser localStorage, Firebase, Supabase, or static JSON as the main storage strategy unless the user explicitly asks for a temporary demo/mock layer.
+
+The real database design should target PostgreSQL.
+
+pgAdmin 4 is not the database itself. PostgreSQL is the database. pgAdmin 4 is the visual tool used to create, inspect, edit, back up, restore, and manage the PostgreSQL database.
+
+## Storage Strategy
+
+Use PostgreSQL as the main database.
+
+The design must include:
+
+* PostgreSQL tables
+* Primary keys
+* Foreign keys
+* Constraints
+* Indexes
+* Seed data
+* Setup instructions for pgAdmin 4
+* Environment variable / connection string requirements
+* Backup and restore notes if the project will be installed on another PC
+
+## PostgreSQL Best Practices
+
+Use PostgreSQL-native features where useful.
+
+### Primary Keys
+
+Prefer UUID primary keys for this project unless there is a strong reason to use integers.
+
+Use:
+
+```sql
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+```
+
+Make sure the required extension exists:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+
+### Timestamps
+
+Use timezone-aware timestamps:
+
+```sql
+created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+```
+
+Do not use plain `TIMESTAMP` unless there is a specific reason.
+
+### Constraints
+
+Use PostgreSQL constraints to protect data quality:
+
+```sql
+CHECK (capacity > 0)
+CHECK (number_of_people > 0)
+CHECK (end_time > start_time)
+UNIQUE (...)
+REFERENCES ... ON DELETE ...
+```
+
+Do not rely only on frontend validation.
+
+### Enums / Controlled Values
+
+For fields like status, role, category, or currency, do not use random free-text values.
+
+Prefer either:
+
+* PostgreSQL enum types
+* check constraints
+* lookup tables if values must be editable by admins
+
+Example:
+
+```sql
+CREATE TYPE room_status AS ENUM ('active', 'inactive', 'maintenance');
+```
+
+### Booking Overlap Prevention
+
+If the app includes room bookings or reservations, overlapping active bookings for the same room must be prevented.
+
+For PostgreSQL, consider using an exclusion constraint.
+
+Example direction:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+```
+
+Then design booking overlap protection using a time range and exclusion constraint where appropriate.
+
+If exclusion constraints are too advanced for the current app, enforce overlap checks in application logic and add tests for them.
+
+## pgAdmin 4 Setup Requirements
+
+When generating `DATABASE_DESIGN.md`, include a pgAdmin 4 setup section with:
+
+```markdown
+## pgAdmin 4 Setup
+
+1. Open pgAdmin 4.
+2. Create or connect to the PostgreSQL server.
+3. Create the project database.
+4. Create the database user if needed.
+5. Run the schema SQL.
+6. Run seed SQL if demo data is needed.
+7. Confirm tables, constraints, and indexes exist.
+8. Add the database connection string to the app environment file.
+```
+
+Also document:
+
+```text
+Database name:
+Database user:
+Host:
+Port:
+Required extensions:
+Schema file:
+Seed file:
+Backup/restore instructions:
+```
+
+## Environment Variable
+
+The app should use a database connection string, usually:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE_NAME"
+```
+
+Do not hardcode the database password inside source code.
+
+Do not commit real company credentials.
+
+Use `.env.example` with fake placeholder values.
+
+## PostgreSQL Schema Output
+
+When using this skill, produce PostgreSQL-ready SQL or ORM schema.
+
+The output should include:
+
+* `CREATE EXTENSION` statements if needed
+* `CREATE TYPE` enum statements if needed
+* `CREATE TABLE` statements
+* foreign keys
+* check constraints
+* unique constraints
+* indexes
+* seed data plan
+* pgAdmin 4 setup instructions
+* `.env.example` requirements
+
+## ORM Rule
+
+Use the ORM already present in the project.
+
+If no ORM exists and the project is TypeScript-based:
+
+* Prefer Prisma if the project needs fast development and clear schema management.
+* Prefer Drizzle if the project needs lightweight SQL-first TypeScript control.
+* Raw SQL is acceptable if the app is small and simple.
+
+Whatever ORM is chosen, the actual target database is still PostgreSQL.
+
+## Remove / Downgrade These Options
+
+Do not present SQLite, localStorage, Firebase, Supabase, or static JSON as equal main storage options.
+
+They may only be used as:
+
+* temporary demo data
+* frontend mock data before PostgreSQL is connected
+* local UI preferences
+* development-only seed/mock files
+
+The production/intended data source is PostgreSQL.

@@ -1,0 +1,39 @@
+Everyday Code Writing
+
+Use this skill for small, focused coding tasks.
+
+This skill is for everyday code work: small chunks, usually one file or a few closely related files. It should help the agent write clean code without overthinking, overbuilding, or changing unrelated parts of the project.
+
+This skill does not replace:
+
+Frontend design
+Planning and task breakdown
+Test-driven development
+Database design
+Backup and restore
+Large multi-file architecture work
+
+If the task becomes large, touches many files, changes architecture, or requires a full feature plan, stop and use a broader planning or implementation workflow instead.
+
+When to Use
+
+Use this skill for:
+
+Editing one file
+Fixing one small bug
+Adding one helper function
+Cleaning up one messy function
+Improving one component
+Fixing one TypeScript error
+Fixing one build error
+Fixing one PostgreSQL query
+Adding one small validation rule
+Improving one small user interaction
+Renaming unclear variables
+Removing small duplication
+Handling one loading, empty, or error state
+Making a small behavior change
+
+Use this when the task is clear, limited, and easy to verify.
+
+If the task touches many unrelated files, use a comprehensive implementation skill instead.

@@ -1,0 +1,15 @@
+Test-Driven Development
+Overview
+
+Write a failing test before writing the code that makes it pass. For bug fixes, reproduce the bug with a test before attempting a fix. Tests are proof — "seems right" is not done. A codebase with good tests is an AI agent's superpower; a codebase without tests is a liability.
+
+Before making changes, inspect the project first. Do not assume tools, scripts, frameworks, configs, package managers, test files, or browser setup exist. Use what the project already has. If something required is missing, add the smallest correct setup needed for the task.
+
+When to Use
+Implementing any new logic or behavior
+Fixing any bug (the Prove-It Pattern)
+Modifying existing functionality
+Adding edge case handling
+Any change that could break existing behavior
+
+When NOT to use: Pure configuration changes, documentation updates, or static content changes that have no behavioral impact.

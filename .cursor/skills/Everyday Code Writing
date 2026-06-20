@@ -1,0 +1,253 @@
+Workflow
+1. Inspect First
+
+Before changing code:
+
+Open the relevant file or files.
+Understand the current behavior.
+Look for existing patterns nearby.
+Check naming style.
+Check imports.
+Check how similar problems are solved elsewhere in the project.
+
+Do not guess the project structure.
+
+Do not introduce a different style if the project already has a clear pattern.
+
+2. Define the Smallest Change
+
+Before editing, identify the smallest safe change.
+
+Ask:
+
+What exactly needs to change?
+Which file actually owns this behavior?
+Can this be fixed without touching other files?
+Is this a bug fix, cleanup, query fix, type fix, or small feature?
+What is the fastest reliable way to verify it?
+
+Avoid scope creep.
+
+3. Make the Change
+
+Make the smallest correct code change.
+
+Prefer:
+
+Clear names
+Simple logic
+Existing project patterns
+Small functions
+Explicit error handling
+Predictable behavior
+Minimal dependencies
+
+Avoid:
+
+Clever code
+Unnecessary abstraction
+Large rewrites
+Random new files
+New packages for tiny problems
+Changing unrelated behavior
+Silencing errors without understanding them
+Everyday Debugging
+
+Use this when something is broken.
+
+Steps:
+
+Reproduce or identify the exact error.
+Read the error message carefully.
+Identify the most likely file.
+Fix one likely cause.
+Re-run the failing command or flow.
+Continue only if needed.
+
+Do not make five random changes at once.
+
+Do not say the bug is fixed unless the failing behavior was checked again.
+
+Everyday TypeScript Fixes
+
+When fixing TypeScript:
+
+Prefer real types over any.
+Do not hide errors with as unknown as.
+Do not remove useful type safety.
+Keep types aligned with the actual data shape.
+If the data comes from PostgreSQL, make sure the type matches the database result.
+
+Good fixes:
+
+Correct the interface
+Narrow the value safely
+Handle null or undefined
+Fix wrong property names
+Fix incorrect function return types
+
+Bad fixes:
+
+Add any
+Disable TypeScript
+Ignore the error
+Change the type while breaking runtime behavior
+Everyday PostgreSQL Code
+
+When touching PostgreSQL-related code:
+
+Do not hardcode passwords.
+Use environment variables.
+Keep queries readable.
+Handle empty results.
+Handle not-found cases.
+Handle connection errors clearly.
+Validate input before writing to the database.
+Keep database access in the existing data layer if one exists.
+
+For room, booking, availability, resource, or spending data, be careful with:
+
+invalid IDs
+missing records
+empty result sets
+capacity limits
+date/time ranges
+overlapping bookings
+duplicate submissions
+timezone confusion
+
+Do not change the database schema in this skill. Use the database-design skill for schema work.
+
+Everyday Browser Code
+
+When touching browser-visible behavior:
+
+Preserve existing UI structure unless the task requires a change.
+Handle loading states when data is loading.
+Handle empty states when no data exists.
+Handle error states when something fails.
+Avoid breaking buttons, forms, filters, and navigation.
+
+Use Chrome DevTools MCP when browser verification is relevant.
+
+Check:
+
+page renders
+console errors
+network failures
+the changed interaction works
+
+Do not claim browser behavior was verified unless it was actually checked.
+
+Everyday Cleanup
+
+Use this when code works but is messy.
+
+Good cleanup:
+
+Rename unclear variables
+Remove dead code
+Remove repeated logic
+Extract a tiny helper
+Simplify conditions
+Make error handling clearer
+Make return values easier to understand
+
+Bad cleanup:
+
+Changing behavior accidentally
+Rewriting the whole file
+Splitting one simple file into many files
+Removing validation
+Removing useful comments
+Adding abstraction without need
+File Creation Rules
+
+Do not create a new file by default.
+
+Create a new file only when:
+
+The code has a clear separate responsibility
+The project already uses that structure
+It prevents real duplication
+The current file would become too messy without it
+
+Before creating a file:
+
+Check if a suitable file already exists.
+Match the project naming style.
+Keep the file focused.
+Do not create extra folders unless needed.
+Dependency Rules
+
+Do not install a package for a small problem unless there is a strong reason.
+
+Before adding a dependency:
+
+Check if the project already has a package for it.
+Check if simple code is enough.
+Check if the package is appropriate for the project.
+Use the project’s existing package manager.
+Do not mix npm, pnpm, yarn, or bun.
+Verification
+
+After the change, run the smallest useful verification.
+
+Examples:
+
+For TypeScript changes: typecheck or build
+For behavior changes: relevant test
+For browser behavior: Chrome DevTools MCP check
+For query changes: run the relevant command or flow
+For build errors: rerun the failed build command
+
+Do not run unnecessary commands just to look busy.
+
+Do not repeat the same successful command unless code changed after it.
+
+Final Response Format
+
+After finishing, respond with:
+
+What changed:
+- ...
+
+Files changed:
+- ...
+
+Verification:
+- ...
+
+Result:
+- ...
+
+Not verified / risks:
+- ...
+
+If no verification was run, say so clearly.
+
+Do not claim tests passed unless tests were run.
+
+Do not claim the browser works unless it was checked.
+
+Do not hide remaining errors.
+
+Final Checklist
+
+Before finishing:
+
+The task stayed small
+
+Relevant files were inspected first
+
+Existing patterns were followed
+
+No unrelated files were changed
+
+No unnecessary new files were created
+
+No unnecessary dependencies were added
+
+The change was verified when possible
+
+Remaining risks were reported clearly
